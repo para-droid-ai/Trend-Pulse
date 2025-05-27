@@ -1,0 +1,15 @@
+{
+  "short_name": "TrendPulse",
+  "name": "TrendPulse Dashboard",
+  "icons": [
+    {
+      "src": "/trendpulse_logo_1.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#4f46e5",
+  "background_color": "#ffffff"
+} 
