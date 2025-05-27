@@ -1177,6 +1177,7 @@ const Dashboard = () => {
                                 ? 'ring-2 ring-primary/50 ring-offset-2 ring-offset-background' 
                                 : ''
                             } w-full`}
+                            style={{ zIndex: 10 }}
                           >
                             <TopicStreamWidget
                               stream={stream}

@@ -351,12 +351,11 @@ const TopicStreamWidget = ({
       className={`${
         isGridView ? 'lg:col-span-1' : 'w-full'
       } bg-card border border-border rounded-xl shadow-sm transition-all duration-300 hover:shadow-md
-       overflow-hidden
        ${isDraggedOver ? 'border-primary bg-primary/5' : ''}
        ${isDragging ? 'opacity-50' : ''}
        ${isNewlyCreated ? 'new-stream-highlight' : ''}
        ${isSelected ? 'selected-stream' : ''}`}
-      style={{ zIndex: 10 }}
+      style={{ zIndex: 60 }}
     >
       {showEditForm ? (
         <div className="p-6 bg-card animate-in slide-in-from-top-2 duration-300 w-full overflow-hidden" style={{ zIndex: 50 }}>
@@ -375,8 +374,8 @@ const TopicStreamWidget = ({
         </div>
       ) : (
         <div className="w-full overflow-hidden">
-          <div className="p-6 pb-4 border-b border-border/50 w-full overflow-hidden">
-            <div className="flex items-start justify-between w-full overflow-hidden">
+          <div className="p-6 pb-4 border-b border-border/50 w-full">
+            <div className="flex items-start justify-between w-full">
               <div className="flex-1 min-w-0 overflow-hidden">
                 <h3 
                   className="text-lg font-semibold text-foreground leading-tight mb-2 group-hover:text-primary transition-colors truncate" 
@@ -413,16 +412,13 @@ const TopicStreamWidget = ({
                 <button
                   onClick={handleUpdateNow}
                   disabled={updating}
-                  className="p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 transition-all duration-200"
+                  className="p-2 rounded-lg text-primary hover:bg-primary/20 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 transition-all duration-200"
                   title="Update Now"
                 >
                   {updating ? (
                     <OrbitalLoadingAnimation size="small" variant="orbital" />
                   ) : (
-                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M23 4v6h-6M1 20v-6h6"/>
-                      <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M22.99 14A9 9 0 0 1 18.36 18.36L14 14"/>
-                    </svg>
+                    <img src="/icons/refresh-1arrow-outline.svg" alt="Refresh Stream" style={{ width: '20px', height: '20px' }} />
                   )}
                 </button>
 
@@ -451,7 +447,7 @@ const TopicStreamWidget = ({
                       </button>
 
                       {showExportOptions && (
-                    <div className="absolute right-0 top-full mt-2 w-48 bg-card border border-border rounded-lg shadow-lg z-50 animate-in slide-in-from-top-2 duration-200">
+                    <div className="absolute right-0 top-full mt-2 w-48 bg-card border border-border rounded-lg shadow-lg z-100 animate-in slide-in-from-top-2 duration-200">
                       <div className="p-2">
                             <button
                           onClick={copyToClipboard}
@@ -471,7 +467,7 @@ const TopicStreamWidget = ({
                             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                             <polyline points="14,2 14,8 20,8"/>
                           </svg>
-                          <span>Export as Markdown</span>
+                          <span>Export as .md</span>
                             </button>
                             <button
                           onClick={() => exportAsFile('txt')}
@@ -481,7 +477,7 @@ const TopicStreamWidget = ({
                             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                             <polyline points="14,2 14,8 20,8"/>
                           </svg>
-                          <span>Export as Text</span>
+                          <span>Export as .txt</span>
                             </button>
                           </div>
                     </div>
