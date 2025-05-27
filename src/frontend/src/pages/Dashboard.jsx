@@ -1145,6 +1145,12 @@ const Dashboard = () => {
                   ) : (
                     // Show all streams
                     <div className="space-y-6">
+                      {/* 
+                        ISSUE 2: Unwanted Header. 
+                        This header block needs to be removed or made conditional.
+                        For now, we'll comment it out as per your request to remove it.
+                      */}
+                      {/*
                       <div className="flex items-center justify-between">
                         <h2 className="text-2xl font-semibold text-foreground">
                           {selectedStream ? selectedStream.query : 'All Streams'}
@@ -1152,7 +1158,7 @@ const Dashboard = () => {
                         <div className="flex items-center space-x-4">
                           {selectedStream && (
                             <button
-                              onClick={() => setSelectedStream(null)}
+                              onClick={() => setSelectedStream(null)} // This button might be useful for Grid view
                               className="text-sm px-3 py-1.5 text-muted-foreground hover:text-foreground rounded-lg hover:bg-accent transition-colors"
                             >
                               Show All Streams
@@ -1160,45 +1166,80 @@ const Dashboard = () => {
                           )}
                           <div className="text-sm text-muted-foreground">
                             {selectedStream ? 'Focused view' : `${topicStreams.length} streams`}
-                        </div>
+                          </div>
                         </div>
                       </div>
-                      
-                      <div className={viewMode === 'grid' 
-                        ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' 
-                        : 'space-y-6'
-                      }>
-                        {getOrderedStreams(topicStreams, 'manual', 'asc').map((stream, index) => (
-                          <div
+                      */}
+
+                      {/* Grid View: Show all stream widgets */}
+                      {viewMode === 'grid' && (
+                        <div className={'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'}>
+                          {getOrderedStreams(topicStreams, 'manual', 'asc').map((stream) => (
+                            <div
                               key={stream.id}
-                            ref={el => streamRefs.current[stream.id] = el}
-                            className={`transition-all duration-300 ${
-                              selectedStream?.id === stream.id 
-                                ? 'ring-2 ring-primary/50 ring-offset-2 ring-offset-background' 
-                                : ''
-                            } w-full`}
-                            style={{ zIndex: 10 }}
-                          >
-                            <TopicStreamWidget
-                              stream={stream}
-                              onDelete={handleDeleteStream}
-                              onUpdate={handleUpdateStream}
-                              isGridView={viewMode === 'grid'}
-                              onDragStart={(e) => handleDragStart(e, stream.id)}
-                              onDragEnd={handleDragEnd}
-                              onDragOver={(e) => handleDragOver(e, stream.id)}
-                              onDrop={(e) => handleDrop(e, stream.id)}
-                              isDraggedOver={dragOverStreamId === stream.id}
-                              isDragging={draggedStreamId === stream.id}
-                              isNewlyCreated={newlyCreatedStreamId === stream.id}
-                              isSelected={selectedStream?.id === stream.id}
-                            />
-                          </div>
-                        ))}
-              </div>
-            </div>
-          )}
-        </div>
+                              ref={el => streamRefs.current[stream.id] = el}
+                              className={`transition-all duration-300 ${
+                                selectedStream?.id === stream.id
+                                  ? 'ring-2 ring-primary/50 ring-offset-2 ring-offset-background'
+                                  : ''
+                              } w-full`}
+                            >
+                              <TopicStreamWidget
+                                stream={stream}
+                                onDelete={handleDeleteStream}
+                                onUpdate={handleUpdateStream}
+                                isGridView={true} // Correct for grid view
+                                onDragStart={(e) => handleDragStart(e, stream.id)}
+                                onDragEnd={handleDragEnd}
+                                onDragOver={(e) => handleDragOver(e, stream.id)}
+                                onDrop={(e) => handleDrop(e, stream.id)}
+                                isDraggedOver={dragOverStreamId === stream.id}
+                                isDragging={draggedStreamId === stream.id}
+                                isNewlyCreated={newlyCreatedStreamId === stream.id}
+                                isSelected={selectedStream?.id === stream.id} // Correctly highlights
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* List View: Show only the selected stream's widget */}
+                      {viewMode === 'list' && (
+                        <div className={'space-y-6'}> {/* This outer space-y-6 might be redundant if only one item is shown */}
+                          {selectedStream ? (
+                            <div
+                              key={selectedStream.id}
+                              ref={el => streamRefs.current[selectedStream.id] = el}
+                              className={`transition-all duration-300 w-full`}
+                            >
+                              <TopicStreamWidget
+                                stream={selectedStream}
+                                onDelete={handleDeleteStream}
+                                onUpdate={handleUpdateStream}
+                                isGridView={false} // Correct for list view
+                                // Drag props might not be necessary if only one widget is shown, but kept for consistency
+                                onDragStart={(e) => handleDragStart(e, selectedStream.id)}
+                                onDragEnd={handleDragEnd}
+                                onDragOver={(e) => handleDragOver(e, selectedStream.id)}
+                                onDrop={(e) => handleDrop(e, selectedStream.id)}
+                                isDraggedOver={dragOverStreamId === selectedStream.id}
+                                isDragging={draggedStreamId === selectedStream.id}
+                                isNewlyCreated={newlyCreatedStreamId === selectedStream.id}
+                                isSelected={true} // This is the focused/selected stream
+                              />
+                            </div>
+                          ) : (
+                            // Message if no stream is selected in List View
+                            <div className="text-center py-16 text-muted-foreground">
+                              <svg className="w-12 h-12 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                              Select a stream from the sidebar to view its content.
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               )}
             </>
           )}

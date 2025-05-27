@@ -8,6 +8,7 @@ import TopicStreamForm from './TopicStreamForm';
 import Portal from './Portal';
 import OrbitalLoadingAnimation from './OrbitalLoadingAnimation';
 import MaskedSection from './MaskedSection';
+import { ArrowPathIcon } from '@heroicons/react/24/outline';
 
 // Custom locale for abbreviated distance
 const customDistanceLocale = {
@@ -410,15 +411,21 @@ const TopicStreamWidget = ({
 
               <div className="flex items-center space-x-2 flex-shrink-0">
                 <button
-                  onClick={handleUpdateNow}
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent card click
+                    handleUpdateNow(stream.id);
+                  }}
                   disabled={updating}
-                  className="p-2 rounded-lg text-primary hover:bg-primary/20 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 transition-all duration-200"
-                  title="Update Now"
+                  className="p-2 rounded-full hover:bg-accent transition-colors group relative"
+                  title="Refresh Now"
                 >
                   {updating ? (
-                    <OrbitalLoadingAnimation size="small" variant="orbital" />
+                    <svg className="animate-spin h-5 w-5 text-foreground" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
                   ) : (
-                    <img src="/icons/refresh-1arrow-outline.svg" alt="Refresh Stream" style={{ width: '20px', height: '20px' }} />
+                    <ArrowPathIcon className="w-5 h-5 text-foreground" />
                   )}
                 </button>
 
