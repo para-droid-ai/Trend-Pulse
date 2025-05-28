@@ -9,10 +9,12 @@ TrendPulse Dashboard is a customizable web application that empowers users to tr
 ***[Youtube Demo](https://www.youtube.com/watch?v=4ev8Qoidxz4), CTLR+Click image to load page in new tab.***
 
 ![TrendPulse List View](docs/list_view.png)
+![TrendPulse Light_List View](docs/light_theme_list2.png)
+
 *List view*
 
 ![TrendPulse Grid View](docs/grid_view.png)
-![TrendPulse Light-List View](docs/light_theme_list.png)
+![TrendPulse Light-List View](docs/light_theme_grid.png)
 
 *Grid view*
 
