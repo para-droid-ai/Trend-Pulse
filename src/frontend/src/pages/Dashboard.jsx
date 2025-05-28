@@ -55,13 +55,12 @@ const Dashboard = () => {
   };
 
   // Handle stream selection from sidebar
-  const handleStreamSelect = (stream) => {
+  const handleStreamSelect = useCallback((stream) => {
     setSelectedStream(stream);
-    // Scroll to the stream after a brief delay to ensure rendering
     setTimeout(() => {
       scrollToStream(stream.id);
     }, 100);
-  };
+  }, []);
 
   // Helper function for intuitive view mode switching (Apple-style UX)
   const changeViewMode = (newMode) => {
@@ -314,11 +313,11 @@ const Dashboard = () => {
   }, [selectedStream]);
 
   // Refresh summaries when a new stream is created, updated, or deleted
-  const refreshSummaries = () => {
+  const refreshSummaries = useCallback(() => {
     if (viewMode === 'mobile') {
       fetchAllSummaries();
     }
-  };
+  }, [viewMode, fetchAllSummaries]);
 
   useEffect(() => {
     fetchTopicStreams();
@@ -330,13 +329,13 @@ const Dashboard = () => {
       setCurrentMobileIndex(0);
     }
     
-    // Preload summaries for mobile view to prevent loading flash
-    if (topicStreams.length > 0 && summaries.length === 0) {
+    // Only fetch all summaries if mobile view is active and summaries are not yet loaded
+    if (viewMode === 'mobile' && topicStreams.length > 0 && summaries.length === 0) {
       fetchAllSummaries();
     }
-  }, [topicStreams, currentMobileIndex, fetchAllSummaries, summaries.length]);
+  }, [topicStreams, currentMobileIndex, fetchAllSummaries, summaries.length, viewMode]);
 
-  const handleCreateStream = async (newStream) => {
+  const handleCreateStream = useCallback(async (newStream) => {
     setCreatingStream(true);
     setCreationProgress(0);
     setCreationMessage('Initializing stream creation...');
@@ -459,9 +458,9 @@ const Dashboard = () => {
       setCreationMessage('');
       setError('Failed to create stream. Please try again.');
     }
-  };
+  }, [refreshSummaries]);
 
-  const handleDeleteStream = async (id) => {
+  const handleDeleteStream = useCallback(async (id) => {
     console.log('🎯 Dashboard handleDeleteStream called with ID:', id);
     setError('');
     try {
@@ -483,9 +482,9 @@ const Dashboard = () => {
       setError(`Failed to delete topic stream: ${err.response?.data?.detail || 'Unknown error'}`);
       console.error(err);
     }
-  };
+  }, [topicStreams, selectedStream]);
 
-  const handleUpdateStream = async (id, updatedData) => {
+  const handleUpdateStream = useCallback(async (id, updatedData) => {
     try {
       const updatedApiStream = await topicStreamAPI.update(id, updatedData);
       setTopicStreams(prevStreams => 
@@ -504,48 +503,40 @@ const Dashboard = () => {
       setError(errorMsg);
       throw err; 
     }
-  };
+  }, [selectedStream, refreshSummaries]);
 
-  const handleUpdateNow = async (id) => {
+  const handleUpdateNow = useCallback(async (id) => {
     try {
       console.log(`Calling update-now API for stream ${id}`);
       const newSummary = await topicStreamAPI.updateNow(id);
       console.log(`Update-now API successful for stream ${id}`);
       
-      // Find the stream to get its query (no longer needed for query, but for updating the stream object)
-      // const stream = topicStreams.find(s => s.id === id);
-      
       if (newSummary.content && newSummary.content.includes("No new information is available")) {
         setError('No new information is available since the last update.');
       } else {
-        // Add the new summary to the combined list (keeping this for mobile view feed)
         setSummaries(prev => [
           {
             ...newSummary,
-            streamQuery: topicStreams.find(s => s.id === id)?.query || '', // Get query from state
+            streamQuery: topicStreams.find(s => s.id === id)?.query || '', 
             streamId: id,
           },
           ...prev
         ]);
       }
       
-      // Fetch the updated stream object to get the latest last_updated timestamp
       const updatedStream = await topicStreamAPI.getById(id);
 
-      // Update the topicStreams state with the fetched updated stream object
       setTopicStreams(prevStreams => {
           const streamsCopy = [...prevStreams];
           const streamIndex = streamsCopy.findIndex(s => s.id === id);
           if (streamIndex > -1) {
-              streamsCopy[streamIndex] = updatedStream; // Replace with the fetched updated stream
+              streamsCopy[streamIndex] = updatedStream;
           }
-          // Re-sort the streams based on the current sort mode and direction
           const sortedStreams = getOrderedStreams(streamsCopy, 'last_updated', 'desc');
-          // Apply the filter for problematic IDs just in case
           return sortedStreams.filter(stream => ![1, 2, 11].includes(stream.id));
       });
 
-      return newSummary; // Return the new summary if needed downstream
+      return newSummary; 
 
     } catch (err) {
       console.error(`Update now error for ID ${id}:`, err);
@@ -556,14 +547,14 @@ const Dashboard = () => {
       }
       throw err;
     }
-  };
+  }, [topicStreams]);
 
-  const handleDragStart = (e, streamId) => {
+  const handleDragStart = useCallback((e, streamId) => {
     setDraggedStreamId(streamId);
     e.dataTransfer.effectAllowed = 'move';
     // Add a visual helper - opacity
     e.target.style.opacity = '0.5';
-  };
+  }, []);
 
   const handleDragEnd = (e) => {
     setDraggedStreamId(null);

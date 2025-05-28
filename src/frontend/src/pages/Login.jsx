@@ -17,8 +17,8 @@ const Login = () => {
     setLoading(true);
     
     try {
-      const response = await authAPI.login(email, password);
-      login({ email }, response.access_token);
+      const responseData = await authAPI.login(email, password);
+      login(responseData);
     } catch (err) {
       let errorMessage = 'Failed to login. Please try again.';
       if (err.response?.data?.detail) {

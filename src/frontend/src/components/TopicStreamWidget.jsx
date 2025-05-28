@@ -1,14 +1,15 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { topicStreamAPI } from '../services/api';
-import { format, formatDistanceToNowStrict, parseISO } from 'date-fns';
+import { parseISO as dateFnsParseISO, formatDistanceToNowStrict as dateFnsFormatDistanceToNowStrict, format as dateFnsFormat } from 'date-fns';
+import { enUS } from 'date-fns/locale';
 import DeepDiveChat from './DeepDiveChat';
 import MarkdownRenderer from './MarkdownRenderer';
 import SummaryDeleteButton from './SummaryDeleteButton';
 import TopicStreamForm from './TopicStreamForm';
 import Portal from './Portal';
-import OrbitalLoadingAnimation from './OrbitalLoadingAnimation';
 import MaskedSection from './MaskedSection';
 import { ArrowPathIcon } from '@heroicons/react/24/outline';
+import { TagIcon } from '@heroicons/react/24/outline';
 
 // Custom locale for abbreviated distance
 const customDistanceLocale = {
@@ -32,24 +33,33 @@ const customDistanceLocale = {
 
 function formatDistanceLocale(token, count, options) {
   options = options || {};
+  const customStrObj = customDistanceLocale[token];
+  let baseString;
 
-  const result = customDistanceLocale[token];
-
-  if (typeof result === 'string') {
-    return result.replace('{{count}}', count);
+  if (typeof customStrObj === 'string') {
+    baseString = customStrObj;
+  } else {
+    // For future dates (options.comparison > 0), prefer '.one' if it makes sense, else '.other'
+    // For past dates, use '.other' for pluralization consistency, or '.one' if count is 1.
+    // This logic might need refinement based on how date-fns calls this with 'count'.
+    // Typically for distance functions, 'count' is the determining factor for one/other.
+    baseString = (count === 1 && customStrObj.one) ? customStrObj.one : customStrObj.other;
   }
+
+  let formattedString = baseString.replace('{{count}}', String(count));
 
   if (options.addSuffix) {
-    if (options.comparison > 0) {
-      return 'in ' + result.one.replace('{{count}}', count);
-    } else {
-      return result.other.replace('{{count}}', count);
+    if (options.comparison > 0) { // Date is in the future
+      // Remove ' ago' or 'ago' if present and prepend 'in '
+      formattedString = 'in ' + formattedString.replace(/\s*ago$/i, '').trim();
+    } else { // Date is in the past
+      // Ensure 'ago' is present if not already (most custom strings have it)
+      if (!formattedString.toLowerCase().endsWith('ago') && formattedString !== 'just now') {
+        formattedString += ' ago';
+      }
     }
-  } else {
-     // Simple case without suffix (though formatDistanceToNowStrict uses suffix)
-     // We'll return the 'other' form as a fallback.
-     return result.other.replace('{{count}}', count);
   }
+  return formattedString;
 }
 
 const localeWithAbbreviation = {
@@ -58,6 +68,106 @@ const localeWithAbbreviation = {
     localize: {}, // Assuming we don't need custom localization strings for now
     match: {}, // Assuming we don't need custom matching for now
     options: {},
+};
+
+const estTimeZone = 'America/New_York';
+
+// Helper function to parse backend date string to a UTC Date object
+const parseBackendDateToUTCDate = (dateString) => {
+  if (!dateString) return null;
+  try {
+    let isoCompliantString = dateString.includes('T') ? dateString : dateString.replace(' ', 'T');
+    // Ensure the string is treated as UTC by appending 'Z' if no offset/Z is present
+    if (!isoCompliantString.endsWith('Z') && !isoCompliantString.match(/[+-]\\d{2}:\\d{2}$/)) {
+      isoCompliantString += 'Z';
+    }
+
+    let parsedDate = dateFnsParseISO(isoCompliantString);
+    if (parsedDate && !isNaN(parsedDate.getTime())) {
+      // console.log(`[DateDebug] parseBackendDateToUTCDate (from dateFnsParseISO on '${isoCompliantString}'): ${parsedDate.toISOString()}`);
+      return parsedDate;
+    }
+
+    // Fallback to new Date() only if dateFnsParseISO fails
+    // console.warn(`[DateDebug] parseBackendDateToUTCDate: dateFnsParseISO failed for '${isoCompliantString}'. Falling back to new Date().`);
+    parsedDate = new Date(isoCompliantString); // new Date() also treats 'Z' as UTC
+    if (parsedDate && !isNaN(parsedDate.getTime())) {
+      // console.log(`[DateDebug] parseBackendDateToUTCDate (from new Date() on '${isoCompliantString}'): ${parsedDate.toISOString()}`);
+      return parsedDate;
+    }
+    
+    // Ultimate fallback: try original date string transformed, as a last resort
+    // This case handles if isoCompliantString was already modified in a way that made it unparsable by the first two attempts
+    let originalAsIsoWithZ = dateString.includes('T') ? dateString : dateString.replace(' ', 'T');
+    if (!originalAsIsoWithZ.endsWith('Z') && !originalAsIsoWithZ.match(/[+-]\\d{2}:\\d{2}$/)) {
+        originalAsIsoWithZ += 'Z';
+    }
+
+    if (isoCompliantString !== originalAsIsoWithZ) { // Only try this if it's a different string than already attempted
+        // console.warn(`[DateDebug] parseBackendDateToUTCDate: Previous methods failed for '${isoCompliantString}'. Trying new Date() on transformed original '${originalAsIsoWithZ}'.`);
+        parsedDate = new Date(originalAsIsoWithZ);
+        if (parsedDate && !isNaN(parsedDate.getTime())) {
+          // console.log(`[DateDebug] parseBackendDateToUTCDate (from new Date() on transformed original '${originalAsIsoWithZ}'): ${parsedDate.toISOString()}`);
+          return parsedDate;
+        }
+    }
+
+    console.error(`[DateDebug] parseBackendDateToUTCDate: All parsing methods failed for original string: '${dateString}' (attempted as '${isoCompliantString}' and '${originalAsIsoWithZ}')`);
+    return null;
+  } catch (error) {
+    console.error(`[DateDebug] parseBackendDateToUTCDate: Exception for original string: '${dateString}'`, error);
+    return null;
+  }
+};
+
+// Helper to get a formatted string directly for EST without using date-fns-tz
+const formatToEstString = (dateString) => {
+  if (!dateString) return '';
+  
+  const dateObj = parseBackendDateToUTCDate(dateString);
+
+  if (!dateObj || !(dateObj instanceof Date) || isNaN(dateObj.getTime())) {
+    console.error(`[DateDebug] formatToEstString: parseBackendDateToUTCDate FAILED for source: ${dateString}. Received:`, dateObj);
+    return 'Invalid Date';
+  }
+  
+  try {
+    console.log(`[DateDebug] Using pure JS approach. UTC Date: ${dateObj.toISOString()}`);
+    
+    // Use the date directly without timezone adjustment
+    const estDate = new Date(dateObj.getTime());
+    
+      // Use date-fns format (not date-fns-tz) to format the date
+  // We're letting the browser handle the timezone display based on local settings
+    const formatted = dateFnsFormat(estDate, 'MMM d, yyyy h:mm a', { locale: enUS });
+    
+    console.log(`[DateDebug] Successfully formatted to EST using pure JS: ${formatted}`);
+    return formatted;
+  } catch (error) {
+    console.error(`[DateDebug] Formatting FAILED with pure JS approach. Error:`, error);
+    
+    try {
+      // Super simple fallback using just JavaScript built-ins
+      const estDate = new Date(dateObj.getTime()); // Use date without timezone adjustment
+      
+      // Format date manually using JS Date methods
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const month = months[estDate.getMonth()];
+      const day = estDate.getDate();
+      const year = estDate.getFullYear();
+      let hours = estDate.getHours();
+      const minutes = estDate.getMinutes().toString().padStart(2, '0');
+      const ampm = hours >= 12 ? 'pm' : 'am';
+      hours = hours % 12 || 12; // Convert to 12-hour format
+      
+      const fallbackFormatted = `${month} ${day}, ${year} ${hours}:${minutes} ${ampm}`;
+      console.log(`[DateDebug] Successfully formatted with JS fallback: ${fallbackFormatted}`);
+      return fallbackFormatted;
+    } catch (fallbackError) {
+      console.error(`[DateDebug] Even JS fallback formatting FAILED. Error:`, fallbackError);
+      return 'Formatting Error';
+    }
+  }
 };
 
 const TopicStreamWidget = ({ 
@@ -75,41 +185,69 @@ const TopicStreamWidget = ({
   isSelected = false
 }) => {
   const [summaries, setSummaries] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isVisible, setIsVisible] = useState(false);
+  const widgetRef = useRef(null);
   const [showDeepDive, setShowDeepDive] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [selectedSummary, setSelectedSummary] = useState(null);
   const [showEditForm, setShowEditForm] = useState(false);
   const [showExportOptions, setShowExportOptions] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState('');
-
-  // State for deleting the WHOLE stream (keep existing)
   const [showDeleteStreamConfirm, setShowDeleteStreamConfirm] = useState(false);
 
   const fetchSummaries = useCallback(async () => {
+    if (!isVisible) return;
+
     try {
       setLoading(true);
       setError('');
       const data = await topicStreamAPI.getSummaries(stream.id);
-      // Map summaries to explicitly include model_type from the stream
       const summariesWithModel = data.map(summary => ({
         ...summary,
-        model_type: stream.model_type, // Ensure model_type from the stream is included
+        model_type: stream.model_type,
       }));
       setSummaries(summariesWithModel);
-      console.log('Fetched summaries data:', data);
     } catch (err) {
       console.error('Failed to load summaries:', err);
       setError('Failed to load summaries. Please try refreshing.');
     } finally {
       setLoading(false);
     }
-  }, [stream.id, stream.model_type]);
+  }, [stream.id, stream.model_type, isVisible]);
 
   useEffect(() => {
-    fetchSummaries();
-  }, [fetchSummaries]);
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          // observer.unobserve(entry.target); // Optional: Unobserve after first visibility
+        }
+      },
+      {
+        rootMargin: '0px',
+        threshold: 0.1
+      }
+    );
+
+    if (widgetRef.current) {
+      observer.observe(widgetRef.current);
+    }
+
+    return () => {
+      if (widgetRef.current) {
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        observer.unobserve(widgetRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isVisible) {
+      fetchSummaries();
+    }
+  }, [isVisible, fetchSummaries]);
 
   const handleUpdateNow = async () => {
     try {
@@ -190,21 +328,50 @@ const TopicStreamWidget = ({
   // Function to format stream content for export
   const formatStreamContent = (streamData, summariesData, formatType = 'md') => {
     let content = ``;
+    // For export, still use the manual formatting logic for consistency
+    const exportFormatDate = (dateString) => {
+         if (!dateString) return '';
+         const dateObj = parseBackendDateToUTCDate(dateString);
+         if (!dateObj || !(dateObj instanceof Date) || isNaN(dateObj.getTime())) {
+              return 'Invalid Date';
+         }
+
+         try {
+              // Use the date directly without timezone adjustment
+              const estDate = new Date(dateObj.getTime());
+              
+              // Format date parts using date-fns (not date-fns-tz)
+              const formattedDatePart = dateFnsFormat(estDate, 'MMM d, yyyy', { locale: enUS });
+              const hour24 = estDate.getHours();
+              const minute = estDate.getMinutes();
+              const hour12 = hour24 % 12 || 12;
+              const ampm = hour24 < 12 || hour24 === 24 ? 'am' : 'pm';
+              const formattedMinute = String(minute).padStart(2, '0');
+
+              return `${formattedDatePart} ${hour12}:${formattedMinute} ${ampm}`;
+         } catch (error) {
+              console.error(`[DateDebug] exportFormatDate: Formatting FAILED for ${dateObj?.toISOString()}. Error:`, error);
+              // Fallback within export if primary formatting fails
+               try {
+                return dateFnsFormat(dateObj, 'MMM d, yyyy HH:mm \'\'EST\'\'', { locale: enUS }); // Simpler fallback, escaped EST
+               } catch (e) {
+                return 'Invalid Date (Export Fallback)';
+               }
+         }
+    };
 
     if (formatType === 'md') {
       content += `# ${streamData.query}\n\n`;
       content += `*Update Frequency:* ${streamData.update_frequency}\n`;
       content += `*Detail Level:* ${streamData.detail_level}\n`;
       if (streamData.last_updated) {
-        // Re-use the date formatting logic for consistency
-        const lastUpdatedFormatted = format(parseISO(streamData.last_updated), 'MMM d, yyyy h:mm a');
+        const lastUpdatedFormatted = exportFormatDate(streamData.last_updated);
         content += `*Last Updated:* ${lastUpdatedFormatted}\n`;
       }
       content += `\n---\n\n`;
 
       summariesData.forEach((summary, index) => {
-        const createdAtFormatted = summary.created_at ? format(parseISO(summary.created_at), 'MMM d, yyyy h:mm a') : '';
-
+        const createdAtFormatted = exportFormatDate(summary.created_at);
         content += `## Summary ${summariesData.length - index}\n\n`;
         content += `*Generated:* ${createdAtFormatted}\n`;
         if (summary.model) {
@@ -232,16 +399,15 @@ const TopicStreamWidget = ({
       content += `Update Frequency: ${streamData.update_frequency}\n`;
       content += `Detail Level: ${streamData.detail_level}\n`;
         if (streamData.last_updated) {
-        const lastUpdatedFormatted = format(parseISO(streamData.last_updated), 'MMM d, yyyy h:mm a');
-        content += `Last Updated: ${lastUpdatedFormatted}\n`;
+        const lastUpdatedFormatted = exportFormatDate(streamData.last_updated);
+        content += `*Last Updated:* ${lastUpdatedFormatted}\n`;
       }
       content += `\n---\n\n`;
 
       summariesData.forEach((summary, index) => {
-        const createdAtFormatted = summary.created_at ? format(parseISO(summary.created_at), 'MMM d, yyyy h:mm a') : '';
-
+        const createdAtFormatted = exportFormatDate(summary.created_at);
         content += `Summary ${summariesData.length - index}\n\n`;
-        content += `Generated: ${createdAtFormatted}\n`;
+        content += `*Generated:* ${createdAtFormatted}\n`;
          if (summary.model) {
           content += `Model: ${summary.model}\n`;
         }
@@ -335,17 +501,9 @@ const TopicStreamWidget = ({
 
   console.log(`TopicStreamWidget mounted/rendered for stream ID ${stream.id}. Total Stored Est Tokens from prop: ${stream.total_stored_est_tokens}`);
 
-  // Calculate time since last update with safety check
-  const lastUpdateTimestamp = summaries && summaries.length > 0 ? summaries[0].created_at : null;
-
-  const timeSinceLastUpdate = lastUpdateTimestamp
-    ? formatDistanceToNowStrict(parseISO(lastUpdateTimestamp), { addSuffix: true, locale: localeWithAbbreviation })
-    : 'Never updated';
-
   return (
     <div 
-      draggable
-      onDragStart={(e) => onDragStart(e, stream.id)}
+      ref={widgetRef}
       onDragEnd={onDragEnd}
       onDragOver={(e) => onDragOver(e, stream.id)}
       onDrop={(e) => onDrop(e, stream.id)}
@@ -379,33 +537,52 @@ const TopicStreamWidget = ({
             <div className="flex items-start justify-between w-full">
               <div className="flex-1 min-w-0 overflow-hidden">
                 <h3 
-                  className="text-lg font-semibold text-foreground leading-tight mb-2 group-hover:text-primary transition-colors truncate" 
-                  title={stream.query}
+                  draggable={!isGridView}
+                  onDragStart={(e) => {
+                    if (!isGridView && onDragStart) {
+                      onDragStart(e, stream.id);
+                    }
+                  }}
+                  className="text-lg font-semibold text-foreground leading-tight mb-2 group-hover:text-primary transition-colors truncate cursor-grab"
+                  title={`${stream.query} (Drag to reorder)`}
                 >
                    {stream.query}
                  </h3>
-                <div className="flex items-center space-x-4 text-sm text-muted-foreground overflow-hidden whitespace-nowrap w-full">
-                  <div className="flex items-center space-x-1">
-                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground overflow-hidden whitespace-nowrap w-full mt-1">
+                  <div className="flex items-center space-x-1" title={`Update frequency: ${stream.update_frequency}`}>
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <circle cx="12" cy="12" r="3"/>
                       <path d="M12 1v6M12 17v6M5.64 5.64l4.24 4.24M14.12 14.12l4.24 4.24M1 12h6M17 12h6M5.64 18.36l4.24-4.24M14.12 9.88l4.24-4.24"/>
                     </svg>
-                    <span className="capitalize">{stream.update_frequency}</span>
+                    {isGridView ? null : <span className="capitalize truncate">{stream.update_frequency}</span>}
                   </div>
-                  <div className="flex items-center space-x-1">
-                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <div className="flex items-center space-x-1" title={`Detail level: ${stream.detail_level}`}>
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                       <polyline points="14,2 14,8 20,8"/>
                     </svg>
-                    <span className="capitalize">{stream.detail_level}</span>
+                    {isGridView ? null : <span className="capitalize truncate">{stream.detail_level}</span>}
                   </div>
-                  <div className="flex items-center space-x-1">
-                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <div className="flex items-center space-x-1" title={`Last summary: ${stream.last_updated ? dateFnsFormatDistanceToNowStrict(parseBackendDateToUTCDate(stream.last_updated) || new Date(), { addSuffix: true, locale: localeWithAbbreviation }) : 'Never'}`}>
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <circle cx="12" cy="12" r="10"/>
                       <polyline points="12,6 12,12 16,14"/>
                     </svg>
-                    <span>{timeSinceLastUpdate}</span>
+                    <span className="truncate">{stream.last_updated ? dateFnsFormatDistanceToNowStrict(parseBackendDateToUTCDate(stream.last_updated) || new Date(), { addSuffix: true, locale: localeWithAbbreviation }) : 'Never'}</span>
                   </div>
+                  {stream.total_stored_est_tokens !== null && stream.total_stored_est_tokens !== undefined && (
+                    <div 
+                      className={`flex items-center space-x-1 px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-xs font-medium ${isGridView ? '' : ''}`}
+                      title={`Estimated total stream tokens: ${stream.total_stored_est_tokens.toLocaleString()}`}
+                    >
+                      <TagIcon className="w-3 h-3 flex-shrink-0" />
+                      {isGridView ? (
+                        <span className="truncate">{`${(stream.total_stored_est_tokens / 1000).toFixed(1)}k`}</span>
+                      ) : (
+                        <span className="truncate">Stream Tokens: {stream.total_stored_est_tokens.toLocaleString()}</span>
+                      )}
+                    </div>
+                  )}
                  </div>
                </div>
 
@@ -416,7 +593,7 @@ const TopicStreamWidget = ({
                     handleUpdateNow(stream.id);
                   }}
                   disabled={updating}
-                  className="p-2 rounded-full hover:bg-accent transition-colors group relative"
+                  className="p-2 rounded-full hover:bg-accent hover:text-white dark:hover:text-white transition-colors group relative"
                   title="Refresh Now"
                 >
                   {updating ? (
@@ -425,16 +602,16 @@ const TopicStreamWidget = ({
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
                   ) : (
-                    <ArrowPathIcon className="w-5 h-5 text-foreground" />
+                    <ArrowPathIcon className="w-5 h-5 text-foreground group-hover:text-white dark:group-hover:text-white" />
                   )}
                 </button>
 
                    <button
                      onClick={handleEdit}
-                  className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent hover:scale-105 active:scale-95 transition-all duration-200"
+                  className="p-2 rounded-lg text-muted-foreground hover:text-white dark:hover:text-white hover:bg-accent hover:scale-105 active:scale-95 transition-all duration-200 group"
                      title="Edit Stream"
                    >
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg className="w-4 h-4 group-hover:text-white dark:group-hover:text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M12 20h9"/>
                     <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
                       </svg>
@@ -443,10 +620,10 @@ const TopicStreamWidget = ({
                 <div className="relative z-50">
                       <button
                         onClick={() => setShowExportOptions(!showExportOptions)}
-                    className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent hover:scale-105 active:scale-95 transition-all duration-200"
+                    className="p-2 rounded-lg text-muted-foreground hover:text-white dark:hover:text-white hover:bg-accent hover:scale-105 active:scale-95 transition-all duration-200 group"
                     title="Export Options"
                   >
-                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg className="w-4 h-4 group-hover:text-white dark:group-hover:text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                       <polyline points="7,10 12,15 17,10"/>
                       <line x1="12" y1="15" x2="12" y2="3"/>
@@ -559,22 +736,30 @@ const TopicStreamWidget = ({
           )}
 
           <div className="divide-y divide-border w-full overflow-hidden">
-            {loading ? (
+            {isVisible && loading && (
               <div className="p-4 text-center text-muted-foreground">Loading summaries...</div>
-            ) : summaries.length === 0 && !error ? (
+            )}
+            {!loading && summaries.length === 0 && isVisible && !error && (
               <div className="p-4 text-center text-muted-foreground">
                 No summaries yet. Click "Update Now" to generate one.
               </div>
-            ) : (
-              summaries.map((summary) => (
+            )}
+            {!isVisible && summaries.length === 0 && !loading && (
+                 <div className="p-4 text-center text-muted-foreground">Scroll to load summaries...</div>
+            )}
+            {summaries.map((summary) => {
+              // Removed the second argument from formatToEstString call
+              const displayCreatedAt = formatToEstString(summary.created_at);
+              
+              return (
                 <div key={summary.id} className="p-2 w-full overflow-hidden">
                   <h4 className="text-md font-medium text-foreground mb-2 w-full overflow-hidden">Summary</h4>
                   <div className="flex flex-wrap gap-2 items-center mb-2 w-full overflow-hidden">
-                    <span className="text-xs px-2.5 py-0.5 rounded-full bg-muted text-black dark:text-white font-medium">
-                      {summary.created_at ? format(parseISO(summary.created_at), 'MMM d, yyyy h:mm a') : ''}
+                    <span className="text-xs px-2.5 py-0.5 rounded-full bg-muted text-foreground dark:text-white font-medium">
+                      {displayCreatedAt}
                     </span>
                     {summary.model && (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-black bg-[#6495ed] dark:text-black">{summary.model}</span>
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white bg-[#6495ed] dark:text-white dark:bg-[#4a6cbf]">{summary.model}</span>
                     )}
 
                     <div className="flex space-x-2 items-center ml-auto pr-1">
@@ -615,7 +800,7 @@ const TopicStreamWidget = ({
                             href={typeof source === 'string' ? source : (source.url || source.name || source)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-xs text-muted-foreground bg-muted hover:bg-muted/80 px-2 py-1 rounded-full truncate max-w-[200px]"
+                            className="text-xs text-foreground dark:text-white bg-muted hover:bg-muted/80 px-2 py-1 rounded-full truncate max-w-[200px]"
                             title={typeof source === 'string' ? source : (source.url || source)}
                           >
                             {typeof source === 'string'
@@ -632,7 +817,7 @@ const TopicStreamWidget = ({
                       
                       {(summary.prompt_tokens !== null || summary.completion_tokens !== null || summary.total_tokens !== null) && (
                         <div className="flex flex-wrap items-center gap-x-2 w-full overflow-hidden">
-                          <span className="font-semibold text-foreground/80">API Usage:</span>
+                          <span className="font-semibold text-foreground dark:text-white">API Usage:</span>
                           
                           {summary.prompt_tokens !== null && (
                             <span title="Tokens in the prompt sent to the API (includes query, system prompt, and previous context if any)">
@@ -662,14 +847,14 @@ const TopicStreamWidget = ({
 
                       {summary.estimated_content_tokens !== null && (
                         <div className={`${(summary.prompt_tokens !== null || summary.completion_tokens !== null || summary.total_tokens !== null) ? 'mt-0.5' : ''}`}>
-                          <span className="text-foreground/80">(Content Est: ~{summary.estimated_content_tokens} tokens)</span>
+                          <span className="text-foreground dark:text-white">(Content Est: ~{summary.estimated_content_tokens} tokens)</span>
                         </div>
                       )}
                     </div>
                   )}
                 </div>
-              ))
-            )}
+              );
+            })}
           </div>
 
           {showDeepDive && selectedSummary && (
@@ -725,7 +910,7 @@ const TopicStreamWidget = ({
                   <div className="flex-1 basis-1/2 p-4 border-r border-border overflow-y-auto">
                     <h4 className="text-md font-medium text-foreground mb-2">Original Summary</h4>
                     <div className="text-sm text-muted-foreground mb-2">
-                        {selectedSummary.created_at ? format(parseISO(selectedSummary.created_at), 'MMM d, yyyy h:mm a') : ''} • Model: {selectedSummary.model_type}
+                        {selectedSummary.created_at ? formatToEstString(selectedSummary.created_at) : ''} • Model: {selectedSummary.model_type}
                     </div>
                     <MarkdownRenderer content={selectedSummary.content} />
                   </div>
@@ -813,4 +998,4 @@ const TopicStreamWidget = ({
   );
 };
 
-export default TopicStreamWidget;
+export default React.memo(TopicStreamWidget);

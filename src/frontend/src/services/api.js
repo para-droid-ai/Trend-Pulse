@@ -13,7 +13,7 @@ const api = axios.create({
 // Add request interceptor for adding auth token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('authToken');
     console.log(`🔐 Request interceptor: Token present: ${!!token}`);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;

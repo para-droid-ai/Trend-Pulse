@@ -94,7 +94,7 @@ const StreamSidebar = ({
         {/* Content Container - Fades in/out with stagger */}
         <div 
           className={`
-            h-full flex flex-col
+            h-full flex flex-col overflow-hidden
             transition-all duration-300 ease-[cubic-bezier(0.4,0.0,0.2,1)]
             ${isOpen 
               ? 'opacity-100 translate-x-0 delay-75' 

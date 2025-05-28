@@ -109,6 +109,12 @@ class UserCreate(BaseModel):
 class UserResponse(BaseModel):
     id: int
     email: str
+    preferred_theme: Optional[str] = None
+    preferred_mode: Optional[str] = None
+
+class UserPreferences(BaseModel):
+    preferred_theme: Optional[str] = None
+    preferred_mode: Optional[str] = None
 
 class TopicStreamCreate(BaseModel):
     query: str
@@ -345,13 +351,34 @@ async def perform_search_and_create_summary(
             full_query += " DO NOT repeat information that was already covered in the previous updates."
 
         recency_filter_for_api = topic_stream.recency_filter # e.g. '1d', '1w'
-        stream_custom_system_prompt = topic_stream.system_prompt
+        # stream_custom_system_prompt = topic_stream.system_prompt # Old way
 
+        # New logic for constructing the system prompt with word count
+        user_custom_prompt = topic_stream.system_prompt
+
+        word_count_map = {
+            DetailLevel.BRIEF.value: "Aim for a response around 1000 words.",
+            DetailLevel.DETAILED.value: "Aim for a response around 4000 words.",
+            DetailLevel.COMPREHENSIVE.value: "Aim for a response around 12000 words."
+        }
+        word_count_instruction = word_count_map.get(topic_stream.detail_level.value)
+
+        final_system_prompt_for_api = user_custom_prompt
+
+        if word_count_instruction:
+            if final_system_prompt_for_api:
+                final_system_prompt_for_api = f"{final_system_prompt_for_api.rstrip()} {word_count_instruction}"
+            else:
+                # Default prompt from PerplexityAPI class when no user prompt is set
+                default_perplexity_system_prompt = "You are a helpful assistant that summarizes recent information about the user\'s query. Focus on developments and news from the specified time period. Present the key findings clearly and concisely, citing sources. Please format your response using markdown for better readability. Use markdown formatting for headings, lists, links, emphasis, and any code snippets or tables. Include citations with proper markdown hyperlinks."
+                final_system_prompt_for_api = f"{default_perplexity_system_prompt} {word_count_instruction}"
+        
         logger.debug(f"For stream {topic_stream.id} - Final User Query for API: {full_query[:200]}...")
-        if stream_custom_system_prompt:
-            logger.debug(f"For stream {topic_stream.id} - Using Custom System Prompt: '{stream_custom_system_prompt[:100]}...'")
+        # logger.debug(f"For stream {topic_stream.id} - Using Custom System Prompt: '{stream_custom_system_prompt[:100]}...'") # Old log
+        if final_system_prompt_for_api:
+            logger.debug(f"For stream {topic_stream.id} - Effective System Prompt for API: {final_system_prompt_for_api[:250]}...")
         else:
-            logger.debug(f"For stream {topic_stream.id} - No custom system prompt, PerplexityAPI will use default.")
+            logger.debug(f"For stream {topic_stream.id} - No specific system prompt constructed; PerplexityAPI will use its internal default.")
 
         result = await perplexity_api.search_perplexity(
             query=full_query,
@@ -360,7 +387,7 @@ async def perform_search_and_create_summary(
             previous_summary=prev_summaries_concatenated_content,
             temperature=topic_stream.temperature,
             detail_level=topic_stream.detail_level.value,
-            custom_system_prompt=stream_custom_system_prompt
+            custom_system_prompt=final_system_prompt_for_api # Pass the fully constructed prompt
         )
 
         content = result.get("answer", "No content available")
@@ -445,7 +472,12 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
     try:
         access_token = create_access_token(data={"sub": user.email})
         logger.info(f"Access token created successfully for user {user.email}")
-        return {"access_token": access_token, "token_type": "bearer"}
+        return {
+            "access_token": access_token, 
+            "token_type": "bearer",
+            "user_id": user.id,
+            "email": user.email
+        }
     except Exception as e:
         logger.error(f"Error creating access token for user {user.email}: {e}", exc_info=True)
         raise HTTPException(
@@ -538,19 +570,20 @@ async def get_topic_streams(
                     total_est_tokens += summary.estimated_content_tokens
             
             # Construct the dictionary for the response, mapping enum values and including the token count
+            # Ensure default values for enums if they are None (e.g., from old data)
             stream_response_data = {
                 "id": stream.id,
                 "query": stream.query,
-                "update_frequency": stream.update_frequency.value if isinstance(stream.update_frequency, Enum) else stream.update_frequency,
-                "detail_level": stream.detail_level.value if isinstance(stream.detail_level, Enum) else stream.detail_level,
-                "model_type": stream.model_type.value if isinstance(stream.model_type, Enum) else stream.model_type,
-                "recency_filter": stream.recency_filter,
+                "update_frequency": stream.update_frequency.value if stream.update_frequency else UpdateFrequency.DAILY.value,
+                "detail_level": stream.detail_level.value if stream.detail_level else DetailLevel.DETAILED.value,
+                "model_type": stream.model_type.value if stream.model_type else ModelType.SONAR_REASONING.value,
+                "recency_filter": stream.recency_filter if stream.recency_filter is not None else "1d", # model default
                 "last_updated": stream.last_updated.isoformat() if stream.last_updated else None,
                 "system_prompt": stream.system_prompt,
-                "temperature": stream.temperature,
-                "context_history_level": stream.context_history_level.value if isinstance(stream.context_history_level, Enum) else stream.context_history_level,
-                "total_stored_est_tokens": total_est_tokens, # Include the calculated value
-                "auto_update_enabled": stream.auto_update_enabled # --- ADDED THIS LINE ---
+                "temperature": stream.temperature if stream.temperature is not None else 0.7, # model default
+                "context_history_level": stream.context_history_level.value if stream.context_history_level else ContextHistoryLevel.LAST_ONE.value,
+                "total_stored_est_tokens": total_est_tokens,
+                "auto_update_enabled": stream.auto_update_enabled if stream.auto_update_enabled is not None else True # model default
             }
             
             # result.append(stream_response_data) # Assuming FastAPI will validate against ResponseModel
@@ -768,6 +801,11 @@ async def deep_dive(
         f"User question: {request.question}"
     )
 
+    messages_for_perplexity.append({
+        "role": "user",
+        "content": contextual_question
+    })
+
     model_to_use = request.model if request.model else "sonar-reasoning"
     logger.debug(f"Deep dive for topic '{topic_stream.query}', summary ID: {request.summary_id}. Question: '{request.question}'")
     logger.info(f"Deep Dive - Using model: {model_to_use}") # Changed to INFO for easier spotting
@@ -950,3 +988,20 @@ async def update_topic_stream(
             status_code=500,
             detail=f"Error updating topic stream: {str(e)}"
         )
+
+# Mock endpoint for saving user preferences for demo purposes
+@app.put("/users/me/preferences", response_model=UserResponse)
+async def mock_update_user_preferences(
+    preferences: UserPreferences,
+    current_user: User = Depends(get_current_user) # Still use current_user to ensure endpoint is protected
+    # db: Session = Depends(get_db) # No db interaction for actual User model update
+):
+    logger.info(f"MOCK SAVE: User {current_user.email} attempting to save preferences: Theme={preferences.preferred_theme}, Mode={preferences.preferred_mode}")
+    # This endpoint does NOT save to the database User model to avoid schema changes.
+    # It just acknowledges the request and returns the preferences as if saved.
+    return UserResponse(
+        id=current_user.id,
+        email=current_user.email,
+        preferred_theme=preferences.preferred_theme, # Echo back the preference
+        preferred_mode=preferences.preferred_mode    # Echo back the preference
+    )
