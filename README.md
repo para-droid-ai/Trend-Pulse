@@ -69,6 +69,13 @@ TrendPulse Dashboard is a customizable web application that empowers users to tr
 -   **Responsive Design:** Icons and UI elements scale appropriately across desktop, tablet, and mobile viewports.
 -   **Accessibility:** Proper ARIA labels and semantic markup ensure the interface is accessible to all users.
 
+### Theming & Personalization
+-   **Light/Dark Mode with Theme Selector:**
+    -   Easily switch between light and dark modes to suit your preference and environment.
+    -   Access a dedicated Theme Selector modal (shortcut: `Ctrl+Alt+T` or `⌘+⌥+T`) to choose from a curated list of themes.
+    -   Selected themes and mode preferences are saved to local storage for persistence across sessions for logged-in users.
+    -   Themes are designed with distinct light and dark variants, and some themes are exclusively light or dark.
+
 ## Sonar Models Used in TrendPulse
 
 TrendPulse leverages a suite of Perplexity Sonar API models to provide diverse functionalities:
