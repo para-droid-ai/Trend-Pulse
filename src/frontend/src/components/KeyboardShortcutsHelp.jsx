@@ -1,17 +1,26 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 const KeyboardShortcutsHelp = ({ isOpen, onClose }) => {
+  const [isMac, setIsMac] = useState(false);
+
+  useEffect(() => {
+    setIsMac(navigator.platform.toUpperCase().indexOf('MAC') >= 0);
+  }, []);
+
   if (!isOpen) return null;
 
+  const modifierKey = isMac ? '⌘' : 'Ctrl';
+  const altKey = isMac ? '⌥' : 'Alt';
+
   const shortcuts = [
-    { key: '⌘N', description: 'Create new stream' },
-    { key: '⌘1', description: 'Switch to list view' },
-    { key: '⌘2', description: 'Switch to grid view' },
-    { key: '⌘3', description: 'Switch to feed view' },
-    { key: '⌘R', description: 'Refresh streams' },
-    { key: '⌘T', description: 'Toggle theme' },
+    { key: `${modifierKey} + ${altKey} + N`, description: 'Create new stream' },
+    { key: `${modifierKey} + 1`, description: 'Switch to list view' },
+    { key: `${modifierKey} + 2`, description: 'Switch to grid view' },
+    { key: `${modifierKey} + 3`, description: 'Switch to feed view' },
+    { key: `${modifierKey} + R`, description: 'Refresh streams' },
+    { key: `${modifierKey} + ${altKey} + T`, description: 'Open theme selector' },
     { key: 'ESC', description: 'Close modals/forms' },
-    { key: '⌘/ or ⌘?', description: 'Show this help' }
+    { key: `${modifierKey} + / or ${modifierKey} + ?`, description: 'Show this help' }
   ];
 
   return (

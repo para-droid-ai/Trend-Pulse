@@ -11,9 +11,11 @@ import KeyboardShortcutsHelp from '../components/KeyboardShortcutsHelp';
 import ThemeSelector from '../components/ThemeSelector';
 import StreamSidebar from '../components/StreamSidebar';
 import StreamLoadingOverlay from '../components/StreamLoadingOverlay';
+import { useTheme } from '../context/ThemeContext';
 
 const Dashboard = () => {
   const { user } = useContext(AuthContext);
+  const { toggleDarkMode } = useTheme();
   const [topicStreams, setTopicStreams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -30,10 +32,12 @@ const Dashboard = () => {
   const [currentMobileIndex, setCurrentMobileIndex] = useState(0);
   const [loadingSummaries, setLoadingSummaries] = useState(false);
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
+  const [showThemeSelectorModal, setShowThemeSelectorModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [creatingStream, setCreatingStream] = useState(false);
   const [creationProgress, setCreationProgress] = useState(0);
   const [creationMessage, setCreationMessage] = useState('');
+  const [isMacOs, setIsMacOs] = useState(false);
   
   // Drag and drop state - Enhanced with insertion position
   const [draggedStreamId, setDraggedStreamId] = useState(null);
@@ -49,7 +53,7 @@ const Dashboard = () => {
     if (streamElement) {
       streamElement.scrollIntoView({
         behavior: 'smooth',
-        block: 'center'
+        block: 'start'
       });
     }
   };
@@ -76,7 +80,7 @@ const Dashboard = () => {
   // Keyboard shortcuts for power users
   useKeyboardShortcuts([
     {
-      key: 'cmd+n',
+      key: 'cmd+alt+n',
       action: () => setShowForm(true),
       description: 'Create new stream'
     },
@@ -99,6 +103,11 @@ const Dashboard = () => {
       key: 'cmd+r',
       action: () => fetchTopicStreams(),
       description: 'Refresh streams'
+    },
+    {
+      key: 'cmd+alt+t',
+      action: () => setShowThemeSelectorModal(true),
+      description: 'Open theme selector'
     },
     {
       key: 'cmd+b',
@@ -130,6 +139,11 @@ const Dashboard = () => {
       description: 'Show keyboard shortcuts'
     }
   ]);
+
+  // Effect to detect OS for dynamic tooltips
+  useEffect(() => {
+    setIsMacOs(navigator.platform.toUpperCase().indexOf('MAC') >= 0);
+  }, []);
 
   // Fetch summaries from all streams and combine them
   const fetchAllSummaries = useCallback(async () => {
@@ -852,7 +866,7 @@ const Dashboard = () => {
               <button
                   onClick={() => setSidebarOpen(!sidebarOpen)}
                   className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200 hover:scale-105 active:scale-95"
-                  title="Toggle Sidebar (⌘B)"
+                  title={isMacOs ? 'Toggle Sidebar (⌘B)' : 'Toggle Sidebar (Ctrl+B)'}
               >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
@@ -948,13 +962,17 @@ const Dashboard = () => {
               {/* Right Controls */}
               <div className="flex items-center space-x-3">
                 {/* Theme Selector */}
-                <ThemeSelector />
+                <ThemeSelector 
+                  isOpen={showThemeSelectorModal} 
+                  onClose={() => setShowThemeSelectorModal(false)}
+                  onToggleRequest={() => setShowThemeSelectorModal(prev => !prev)}
+                />
 
                 {/* Keyboard shortcuts button */}
               <button 
                   onClick={() => setShowKeyboardHelp(true)}
                   className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent hover:scale-105 active:scale-95 transition-all duration-200"
-                  title="Keyboard Shortcuts (⌘?)"
+                  title={isMacOs ? 'Keyboard Shortcuts (⌘?)' : 'Keyboard Shortcuts (Ctrl+?)'}
                 >
                   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
