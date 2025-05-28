@@ -347,10 +347,14 @@ async def perform_search_and_create_summary(
         model = topic_stream.model_type.value
         base_query = topic_stream.query
 
+        # Add current date/time context to prevent temporal hallucinations
+        from datetime import datetime, timezone
+        current_datetime = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+
         if prev_summaries_concatenated_content:
-            full_query = f"Provide ONLY NEW information about {base_query} that wasn't in the previous updates. Focus on recent developments, news, and updates."
+            full_query = f"Current Date/Time: {current_datetime}\n\nProvide ONLY NEW information about {base_query} that wasn't in the previous updates. Focus on recent developments, news, and updates."
         else:
-            full_query = base_query
+            full_query = f"Current Date/Time: {current_datetime}\n\n{base_query}"
 
         full_query += ". Format your response using markdown for better readability."
 
@@ -377,7 +381,7 @@ async def perform_search_and_create_summary(
                 final_system_prompt_for_api = f"{final_system_prompt_for_api.rstrip()} {word_count_instruction}"
             else:
                 # Default prompt from PerplexityAPI class when no user prompt is set
-                default_perplexity_system_prompt = "You are a helpful assistant that summarizes recent information about the user\'s query. Focus on developments and news from the specified time period. Present the key findings clearly and concisely, citing sources. Please format your response using markdown for better readability. Use markdown formatting for headings, lists, links, emphasis, and any code snippets or tables. Include citations with proper markdown hyperlinks."
+                default_perplexity_system_prompt = f"Current Date/Time: {current_datetime}\n\nYou are a helpful assistant that summarizes recent information about the user's query. Focus on developments and news from the specified time period. Present the key findings clearly and concisely, citing sources. Please format your response using markdown for better readability. Use markdown formatting for headings, lists, links, emphasis, and any code snippets or tables. Include citations with proper markdown hyperlinks."
                 final_system_prompt_for_api = f"{default_perplexity_system_prompt} {word_count_instruction}"
         
         logger.debug(f"For stream {topic_stream.id} - Final User Query for API: {full_query[:200]}...")
@@ -792,7 +796,10 @@ async def deep_dive(
     # Use the topic stream's custom system prompt if available, otherwise a default for chat
     deep_dive_system_content = topic_stream.system_prompt
     if not deep_dive_system_content:
-        deep_dive_system_content = f"You are a helpful AI assistant. The user is exploring the topic: \'{topic_stream.query}\'. Answer their questions clearly and concisely. Format your response using markdown."
+        # Add current date/time context to prevent temporal hallucinations
+        from datetime import datetime, timezone
+        current_datetime = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+        deep_dive_system_content = f"Current Date/Time: {current_datetime}\n\nYou are a helpful AI assistant. The user is exploring the topic: '{topic_stream.query}'. Answer their questions clearly and concisely. Format your response using markdown."
 
     messages_for_perplexity.append({
         "role": "system",
@@ -802,7 +809,12 @@ async def deep_dive(
     # Conditionally add initial stream summary context
     # This logic is adjusted to only add summary if include_stream_summary_context is true AND it's the first message (no chat_history)
 
+    # Add current date/time context to prevent temporal hallucinations
+    from datetime import datetime, timezone
+    current_datetime = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+
     contextual_question = (
+        f"Current Date/Time: {current_datetime}\n\n"
         f"Regarding the topic \"{topic_stream.query}\" and the following summary:\n\n"
         f"Summary: {summary.content}\n\n"
         f"User question: {request.question}"
