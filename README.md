@@ -267,10 +267,15 @@ The application primarily interacts with Perplexity's `/chat/completions` endpoi
 -   `temperature`: User-configurable per stream for summary generation; a default is used for chat.
 
 ## Additional Screenshots
+-   Add/Edit Stream
+-   ![New Stream-creation-light-theme](docs/edit_stream_light.png)
 -   New Stream creation animation
 -   ![Grid-view-dark-theme](docs/new_stream_creation_light.png)
+-   List View Stream Update
+-   ![list-view-stream-update-dark-theme](docs/Stream_update_dark_theme.png)
 -   Dark Theme Grid
 -   ![New Stream-creation-light-theme](docs/grid_dark_theme.png)
+
 
 ## Contributing
 
