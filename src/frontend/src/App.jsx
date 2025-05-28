@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import AuthContext from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import DndWrapper from './components/DndWrapper';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -63,17 +64,19 @@ function App() {
   }
 
   return (
-    <ThemeProvider userId={userId}>
-      <AuthContext.Provider value={{ user, userId, isAuthenticated, login, logout }}>
-        <Router>
-          <Routes>
-            <Route path="/login" element={isAuthenticated ? <Navigate to="/" /> : <Login />} />
-            <Route path="/register" element={isAuthenticated ? <Navigate to="/" /> : <Register />} />
-            <Route path="/" element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />} />
-          </Routes>
-        </Router>
-      </AuthContext.Provider>
-    </ThemeProvider>
+    <DndWrapper>
+      <ThemeProvider userId={userId}>
+        <AuthContext.Provider value={{ user, userId, isAuthenticated, login, logout }}>
+          <Router>
+            <Routes>
+              <Route path="/login" element={isAuthenticated ? <Navigate to="/" /> : <Login />} />
+              <Route path="/register" element={isAuthenticated ? <Navigate to="/" /> : <Register />} />
+              <Route path="/" element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />} />
+            </Routes>
+          </Router>
+        </AuthContext.Provider>
+      </ThemeProvider>
+    </DndWrapper>
   );
 }
 

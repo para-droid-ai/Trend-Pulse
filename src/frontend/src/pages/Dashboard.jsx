@@ -12,9 +12,10 @@ import ThemeSelector from '../components/ThemeSelector';
 import StreamSidebar from '../components/StreamSidebar';
 import StreamLoadingOverlay from '../components/StreamLoadingOverlay';
 import { useTheme } from '../context/ThemeContext';
+import { Resizable } from 're-resizable';
 
 const Dashboard = () => {
-  const { user } = useContext(AuthContext);
+  const { user, logout } = useContext(AuthContext);
   const { toggleDarkMode } = useTheme();
   const [topicStreams, setTopicStreams] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -39,7 +40,7 @@ const Dashboard = () => {
   const [creationMessage, setCreationMessage] = useState('');
   const [isMacOs, setIsMacOs] = useState(false);
   
-  // Drag and drop state - Enhanced with insertion position
+  // Simplified drag state variables without DnD
   const [draggedStreamId, setDraggedStreamId] = useState(null);
   const [dragOverStreamId, setDragOverStreamId] = useState(null);
   const [dragInsertionIndex, setDragInsertionIndex] = useState(null);
@@ -563,10 +564,10 @@ const Dashboard = () => {
     }
   }, [topicStreams]);
 
+  // Simplified drag-and-drop functions - still using HTML5 native drag and drop
   const handleDragStart = useCallback((e, streamId) => {
     setDraggedStreamId(streamId);
     e.dataTransfer.effectAllowed = 'move';
-    // Add a visual helper - opacity
     e.target.style.opacity = '0.5';
   }, []);
 
@@ -574,7 +575,6 @@ const Dashboard = () => {
     setDraggedStreamId(null);
     setDragOverStreamId(null);
     setDragInsertionIndex(null);
-    // Reset opacity
     e.target.style.opacity = '1';
   };
 
@@ -982,9 +982,12 @@ const Dashboard = () => {
               </button>
 
                 {/* Sign out button */}
-                <button className="px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 hover:scale-105 active:scale-95 transition-all duration-200">
+                <button 
+                  onClick={logout}
+                  className="px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 hover:scale-105 active:scale-95 transition-all duration-200"
+                >
                   Sign Out
-                    </button>
+                </button>
                   </div>
                 </div>
                   </div>
@@ -1011,16 +1014,16 @@ const Dashboard = () => {
                 <p className="text-sm font-medium text-destructive">{error}</p>
                     </div>
                     <button
-                onClick={clearError}
-                className="text-destructive/60 hover:text-destructive transition-colors p-1 rounded-md hover:bg-destructive/10"
-                    >
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M18 6L6 18M6 6l12 12"/>
-                </svg>
-                    </button>
-                  </div>
+              onClick={clearError}
+              className="text-destructive/60 hover:text-destructive transition-colors p-1 rounded-md hover:bg-destructive/10"
+                  >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
+                  </button>
+                </div>
           )}
-                      
+                    
           {/* Success Display with Apple-style design */}
           {successMessage && (
             <div className="mb-6 p-4 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800/30 rounded-lg flex items-start space-x-3 animate-in slide-in-from-top-2 duration-300">
@@ -1031,12 +1034,12 @@ const Dashboard = () => {
                 <p className="text-sm font-medium text-green-800 dark:text-green-200">{successMessage}</p>
                       </div>
                       <button
-                onClick={() => setSuccessMessage('')}
-                className="text-green-600/60 hover:text-green-600 dark:text-green-400/60 dark:hover:text-green-400 transition-colors p-1 rounded-md hover:bg-green-100 dark:hover:bg-green-900/30"
+              onClick={() => setSuccessMessage('')}
+              className="text-green-600/60 hover:text-green-600 dark:text-green-400/60 dark:hover:text-green-400 transition-colors p-1 rounded-md hover:bg-green-100 dark:hover:bg-green-900/30"
                       >
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M18 6L6 18M6 6l12 12"/>
-                </svg>
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
                       </button>
                     </div>
                     )}
@@ -1081,10 +1084,10 @@ const Dashboard = () => {
               {[1, 2, 3].map((i) => (
                 <div key={i} className="animate-pulse">
                   <div className="h-32 bg-muted/50 rounded-xl"></div>
-                      </div>
+                </div>
               ))}
-                      </div>
-                    ) : (
+            </div>
+          ) : (
             <>
               {/* Content based on view mode */}
               {viewMode === 'mobile' ? (
@@ -1099,7 +1102,6 @@ const Dashboard = () => {
                   ) : (
                     <div className="space-y-4">
                       {loadingSummaries ? (
-                        // Show skeleton loading with consistent height
                         [1, 2, 3].map((i) => (
                           <div key={i} className="animate-pulse bg-card rounded-xl p-4 border min-h-[200px]">
                             <div className="flex space-x-3">
@@ -1108,24 +1110,23 @@ const Dashboard = () => {
                                 <div className="h-4 bg-muted rounded w-3/4"></div>
                                 <div className="h-3 bg-muted rounded w-1/2"></div>
                                 <div className="h-3 bg-muted rounded w-2/3"></div>
-                                </div>
-                                </div>
+                              </div>
+                            </div>
                             <div className="mt-4 space-y-2">
                               <div className="h-3 bg-muted rounded w-full"></div>
                               <div className="h-3 bg-muted rounded w-5/6"></div>
                               <div className="h-3 bg-muted rounded w-4/5"></div>
-                              </div>
-                  </div>
+                            </div>
+                          </div>
                         ))
                       ) : (
-                        // Empty state
                         <div className="text-center py-12">
                           <svg className="w-12 h-12 text-muted-foreground mx-auto mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M12 2L13.09 8.26L19 9L13.09 9.74L12 16L10.91 9.74L5 9L10.91 8.26L12 2Z"/>
                           </svg>
                           <p className="text-muted-foreground">No summaries available yet</p>
-                </div>
-              )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1141,46 +1142,18 @@ const Dashboard = () => {
                       </svg>
                       <h3 className="text-xl font-semibold text-foreground mb-2">No Topic Streams Yet</h3>
                       <p className="text-muted-foreground mb-6">Create your first topic stream to start tracking trends</p>
-                        <button
+                      <button
                         onClick={() => setShowForm(true)}
                         className="inline-flex items-center space-x-2 px-6 py-3 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 hover-lift"
-                        >
+                      >
                         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M12 5v14M5 12h14"/>
-                          </svg>
+                        </svg>
                         <span>Create First Stream</span>
-                        </button>
-                      </div>
+                      </button>
+                    </div>
                   ) : (
-                    // Show all streams
                     <div className="space-y-6">
-                      {/* 
-                        ISSUE 2: Unwanted Header. 
-                        This header block needs to be removed or made conditional.
-                        For now, we'll comment it out as per your request to remove it.
-                      */}
-                      {/*
-                      <div className="flex items-center justify-between">
-                        <h2 className="text-2xl font-semibold text-foreground">
-                          {selectedStream ? selectedStream.query : 'All Streams'}
-                        </h2>
-                        <div className="flex items-center space-x-4">
-                          {selectedStream && (
-                            <button
-                              onClick={() => setSelectedStream(null)} // This button might be useful for Grid view
-                              className="text-sm px-3 py-1.5 text-muted-foreground hover:text-foreground rounded-lg hover:bg-accent transition-colors"
-                            >
-                              Show All Streams
-                            </button>
-                          )}
-                          <div className="text-sm text-muted-foreground">
-                            {selectedStream ? 'Focused view' : `${topicStreams.length} streams`}
-                          </div>
-                        </div>
-                      </div>
-                      */}
-
-                      {/* Grid View: Show all stream widgets */}
                       {viewMode === 'grid' && (
                         <div className={'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'}>
                           {getOrderedStreams(topicStreams, 'manual', 'asc').map((stream) => (
@@ -1193,52 +1166,22 @@ const Dashboard = () => {
                                   : ''
                               } w-full`}
                             >
-                              <TopicStreamWidget
-                                stream={stream}
-                                onDelete={handleDeleteStream}
-                                onUpdate={handleUpdateStream}
-                                isGridView={true} // Correct for grid view
-                                onDragStart={(e) => handleDragStart(e, stream.id)}
-                                onDragEnd={handleDragEnd}
-                                onDragOver={(e) => handleDragOver(e, stream.id)}
-                                onDrop={(e) => handleDrop(e, stream.id)}
-                                isDraggedOver={dragOverStreamId === stream.id}
-                                isDragging={draggedStreamId === stream.id}
-                                isNewlyCreated={newlyCreatedStreamId === stream.id}
-                                isSelected={selectedStream?.id === stream.id} // Correctly highlights
-                              />
+                              <TopicStreamWidget stream={stream} onDelete={handleDeleteStream} onUpdate={handleUpdateStream} isGridView={true} onDragStart={(e) => handleDragStart(e, stream.id)} onDragEnd={handleDragEnd} onDragOver={(e) => handleDragOver(e, stream.id)} onDrop={(e) => handleDrop(e, stream.id)} isDraggedOver={dragOverStreamId === stream.id} isDragging={draggedStreamId === stream.id} isNewlyCreated={newlyCreatedStreamId === stream.id} isSelected={selectedStream?.id === stream.id} />
                             </div>
                           ))}
                         </div>
                       )}
-
-                      {/* List View: Show only the selected stream's widget */}
                       {viewMode === 'list' && (
-                        <div className={'space-y-6'}> {/* This outer space-y-6 might be redundant if only one item is shown */}
+                        <div className={'space-y-6'}>
                           {selectedStream ? (
                             <div
                               key={selectedStream.id}
                               ref={el => streamRefs.current[selectedStream.id] = el}
                               className={`transition-all duration-300 w-full`}
                             >
-                              <TopicStreamWidget
-                                stream={selectedStream}
-                                onDelete={handleDeleteStream}
-                                onUpdate={handleUpdateStream}
-                                isGridView={false} // Correct for list view
-                                // Drag props might not be necessary if only one widget is shown, but kept for consistency
-                                onDragStart={(e) => handleDragStart(e, selectedStream.id)}
-                                onDragEnd={handleDragEnd}
-                                onDragOver={(e) => handleDragOver(e, selectedStream.id)}
-                                onDrop={(e) => handleDrop(e, selectedStream.id)}
-                                isDraggedOver={dragOverStreamId === selectedStream.id}
-                                isDragging={draggedStreamId === selectedStream.id}
-                                isNewlyCreated={newlyCreatedStreamId === selectedStream.id}
-                                isSelected={true} // This is the focused/selected stream
-                              />
+                              <TopicStreamWidget stream={selectedStream} onDelete={handleDeleteStream} onUpdate={handleUpdateStream} isGridView={false} onDragStart={(e) => handleDragStart(e, selectedStream.id)} onDragEnd={handleDragEnd} onDragOver={(e) => handleDragOver(e, selectedStream.id)} onDrop={(e) => handleDrop(e, selectedStream.id)} isDraggedOver={dragOverStreamId === selectedStream.id} isDragging={draggedStreamId === selectedStream.id} isNewlyCreated={newlyCreatedStreamId === selectedStream.id} isSelected={true} />
                             </div>
                           ) : (
-                            // Message if no stream is selected in List View
                             <div className="text-center py-16 text-muted-foreground">
                               <svg className="w-12 h-12 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
                               Select a stream from the sidebar to view its content.
@@ -1254,7 +1197,7 @@ const Dashboard = () => {
           )}
 
           {/* Deep Dive Chat Modal */}
-      {showDeepDive && selectedSummary && (
+          {showDeepDive && selectedSummary && (
             <div 
               className="fixed bg-black/50 backdrop-blur-sm animate-in fade-in duration-300"
               style={{ 
@@ -1294,9 +1237,9 @@ const Dashboard = () => {
                     setSelectedSummary(null);
                   }}
                   />
-          </div>
-        </div>
-      )}
+              </div>
+            </div>
+          )}
 
           {/* Keyboard Shortcuts Help Modal */}
           {showKeyboardHelp && (
