@@ -12,7 +12,6 @@ import ThemeSelector from '../components/ThemeSelector';
 import StreamSidebar from '../components/StreamSidebar';
 import StreamLoadingOverlay from '../components/StreamLoadingOverlay';
 import { useTheme } from '../context/ThemeContext';
-import { Resizable } from 're-resizable';
 
 const Dashboard = () => {
   const { user, logout } = useContext(AuthContext);
@@ -716,10 +715,10 @@ const Dashboard = () => {
   // Render a single summary item for the mobile feed
   const renderSummaryItem = (summary) => {
     return (
-      <div key={summary.id} className="bg-card rounded-lg shadow-sm border border-border mb-4 p-3">
+      <div key={summary.id} className="p-3 mb-4 border rounded-lg shadow-sm bg-card border-border">
         {/* Summary Header */}
         <div className="border-b border-border sticky top-[69px] bg-card z-10 pb-3">
-          <div className="flex justify-between items-start mb-2">
+          <div className="flex items-start justify-between mb-2">
             <h3 className="text-lg font-semibold text-foreground line-clamp-2 max-w-[80%] Camino text-ellipsis overflow-hidden" title={summary.streamQuery}>{summary.streamQuery}</h3>
             {/* Combine Timestamp and Deep Dive button in a right-aligned container */}
             <div className="flex flex-col items-end flex-shrink-0">
@@ -741,7 +740,7 @@ const Dashboard = () => {
           </div>
           
           {/* Stream Actions and additional info badges - Now on the same line */}
-          <div className="flex flex-wrap gap-2 items-center">
+          <div className="flex flex-wrap items-center gap-2">
              {/* Model Badge */}
              {summary.model && (
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-gray-100 bg-[#4f46e5]">
@@ -762,7 +761,7 @@ const Dashboard = () => {
                 const stream = topicStreams.find(s => s.id === summary.streamId);
                 if (stream) handleUpdateNow(stream.id);
               }}
-              className="text-xs py-1 px-2 bg-primary text-primary-foreground rounded-full hover:bg-primary/90"
+              className="px-2 py-1 text-xs rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
             >
               Update
             </button>
@@ -776,7 +775,7 @@ const Dashboard = () => {
                   setSelectedStream(topicStreams[streamIndex]);
                 }
               }}
-              className="text-xs py-1 px-2 bg-muted text-muted-foreground rounded-full hover:bg-muted/80"
+              className="px-2 py-1 text-xs rounded-full bg-muted text-muted-foreground hover:bg-muted/80"
             >
               View All
             </button>
@@ -788,15 +787,15 @@ const Dashboard = () => {
           {/* Thoughts (experimental) section */}
           {summary.thoughts && (
             <div className="mb-4 p-3 rounded-md bg-muted dark:bg-[#4b4a49]">
-              <div className="text-sm font-medium text-muted-foreground mb-2">
+              <div className="mb-2 text-sm font-medium text-muted-foreground">
                 Thoughts (experimental)
               </div>
-              <div className="prose prose-sm max-w-none dark:prose-invert">
+              <div className="prose-sm prose max-w-none dark:prose-invert">
                 <MarkdownRenderer content={summary.thoughts} sources={summary.sources} />
               </div>
             </div>
           )}
-          <div className="prose prose-sm max-w-none dark:prose-invert">
+          <div className="prose-sm prose max-w-none dark:prose-invert">
             <MarkdownRenderer content={summary.content || ''} sources={summary.sources} />
           </div>
         </div>
@@ -804,7 +803,7 @@ const Dashboard = () => {
         {/* Summary Sources */}
         {summary.sources && summary.sources.length > 0 && (
           <div className="px-4 pb-4">
-            <div className="text-xs font-medium text-muted-foreground mb-1">Sources:</div>
+            <div className="mb-1 text-xs font-medium text-muted-foreground">Sources:</div>
             <div className="flex flex-wrap gap-1">
               {summary.sources.map((source, index) => (
                 <a
@@ -832,7 +831,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="flex min-h-screen bg-background">
       {/* Stream Sidebar */}
       <StreamSidebar
         isOpen={sidebarOpen}
@@ -855,17 +854,17 @@ const Dashboard = () => {
       />
       
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-h-screen overflow-x-hidden">
+      <div className="flex flex-col flex-1 min-h-screen overflow-x-hidden">
         {/* Enhanced Header */}
         <header className="sticky top-0 z-30 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="px-4 sm:px-6 lg:px-8">
-            <div className="flex h-16 items-center justify-between">
+            <div className="flex items-center justify-between h-16">
               {/* Left side with sidebar toggle and Logo */}
               <div className="flex items-center space-x-3">
                 {/* Sidebar Toggle Button */}
               <button
                   onClick={() => setSidebarOpen(!sidebarOpen)}
-                  className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200 hover:scale-105 active:scale-95"
+                  className="p-2 transition-all duration-200 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent hover:scale-105 active:scale-95"
                   title={isMacOs ? 'Toggle Sidebar (⌘B)' : 'Toggle Sidebar (Ctrl+B)'}
               >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -882,10 +881,10 @@ const Dashboard = () => {
                   <img 
                     src="/trendpulse_logo_1.svg" 
                     alt="TrendPulse" 
-                    className="h-8 w-8 transition-transform group-hover:scale-105" 
+                    className="w-8 h-8 transition-transform group-hover:scale-105" 
                   />
                   <div>
-                    <h1 className="text-xl font-semibold text-foreground tracking-tight">
+                    <h1 className="text-xl font-semibold tracking-tight text-foreground">
                       TrendPulse
                     </h1>
                     <p className="text-xs text-muted-foreground">
@@ -898,10 +897,10 @@ const Dashboard = () => {
               {/* Center Controls */}
               <div className="flex items-center space-x-6">
                 {/* 3-Position View Mode Slider */}
-                <div className="relative bg-muted/50 rounded-lg p-1 flex items-center border view-mode-slider">
+                <div className="relative flex items-center p-1 border rounded-lg bg-muted/50 view-mode-slider">
                   {/* Sliding background indicator */}
                   <div 
-                    className="absolute top-1 bottom-1 bg-primary rounded-md shadow-sm view-mode-slider-indicator"
+                    className="absolute rounded-md shadow-sm top-1 bottom-1 bg-primary view-mode-slider-indicator"
                     style={{
                       width: '32%',
                       left: viewMode === 'list' ? '2%' : viewMode === 'grid' ? '34%' : '66%'
@@ -971,7 +970,7 @@ const Dashboard = () => {
                 {/* Keyboard shortcuts button */}
               <button 
                   onClick={() => setShowKeyboardHelp(true)}
-                  className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent hover:scale-105 active:scale-95 transition-all duration-200"
+                  className="p-2 transition-all duration-200 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent hover:scale-105 active:scale-95"
                   title={isMacOs ? 'Keyboard Shortcuts (⌘?)' : 'Keyboard Shortcuts (Ctrl+?)'}
                 >
                   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -984,7 +983,7 @@ const Dashboard = () => {
                 {/* Sign out button */}
                 <button 
                   onClick={logout}
-                  className="px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 hover:scale-105 active:scale-95 transition-all duration-200"
+                  className="px-4 py-2 transition-all duration-200 rounded-lg bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:scale-105 active:scale-95"
                 >
                   Sign Out
                 </button>
@@ -1002,11 +1001,11 @@ const Dashboard = () => {
 
         {/* Main Content */}
         <main 
-          className="flex-1 px-4 sm:px-6 lg:px-8 py-8 overflow-y-auto overflow-x-hidden"
+          className="flex-1 px-4 py-8 overflow-x-hidden overflow-y-auto sm:px-6 lg:px-8"
         >
           {/* Error Display with enhanced design */}
           {error && (
-            <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start space-x-3 animate-in slide-in-from-top-2 duration-300">
+            <div className="flex items-start p-4 mb-6 space-x-3 duration-300 border rounded-lg bg-destructive/10 border-destructive/20 animate-in slide-in-from-top-2">
               <svg className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 9v4M12 17h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/>
               </svg>
@@ -1015,7 +1014,7 @@ const Dashboard = () => {
                     </div>
                     <button
               onClick={clearError}
-              className="text-destructive/60 hover:text-destructive transition-colors p-1 rounded-md hover:bg-destructive/10"
+              className="p-1 transition-colors rounded-md text-destructive/60 hover:text-destructive hover:bg-destructive/10"
                   >
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M18 6L6 18M6 6l12 12"/>
@@ -1026,7 +1025,7 @@ const Dashboard = () => {
                     
           {/* Success Display with Apple-style design */}
           {successMessage && (
-            <div className="mb-6 p-4 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800/30 rounded-lg flex items-start space-x-3 animate-in slide-in-from-top-2 duration-300">
+            <div className="flex items-start p-4 mb-6 space-x-3 duration-300 border border-green-200 rounded-lg bg-green-50 dark:bg-green-950/30 dark:border-green-800/30 animate-in slide-in-from-top-2">
               <svg className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M9 12l2 2 4-4M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/>
               </svg>
@@ -1035,7 +1034,7 @@ const Dashboard = () => {
                       </div>
                       <button
               onClick={() => setSuccessMessage('')}
-              className="text-green-600/60 hover:text-green-600 dark:text-green-400/60 dark:hover:text-green-400 transition-colors p-1 rounded-md hover:bg-green-100 dark:hover:bg-green-900/30"
+              className="p-1 transition-colors rounded-md text-green-600/60 hover:text-green-600 dark:text-green-400/60 dark:hover:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30"
                       >
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M18 6L6 18M6 6l12 12"/>
@@ -1046,14 +1045,14 @@ const Dashboard = () => {
 
           {/* Create Stream Form */}
           {showForm && (
-            <div className="mb-8 bg-card border border-border rounded-xl shadow-sm animate-in slide-in-from-top-2 duration-300 relative overflow-hidden">
+            <div className="relative mb-8 overflow-hidden duration-300 border shadow-sm bg-card border-border rounded-xl animate-in slide-in-from-top-2">
               {!creatingStream ? (
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-lg font-semibold text-foreground">Create New Topic Stream</h2>
                     <button
                       onClick={() => setShowForm(false)}
-                      className="p-2 text-muted-foreground hover:text-foreground rounded-lg hover:bg-accent transition-colors"
+                      className="p-2 transition-colors rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent"
                     >
                       <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M18 6L6 18M6 6l12 12"/>
@@ -1093,10 +1092,10 @@ const Dashboard = () => {
               {viewMode === 'mobile' ? (
                 <div 
                   key={`mobile-view-${viewMode}`} 
-                  className="mobile-feed-view w-full max-w-full overflow-x-hidden"
+                  className="w-full max-w-full overflow-x-hidden mobile-feed-view"
                 >
                   {summaries.length > 0 ? (
-                    <div className="space-y-6 w-full max-w-full">
+                    <div className="w-full max-w-full space-y-6">
                       {summaries.map((summary) => renderSummaryItem(summary))}
                     </div>
                   ) : (
@@ -1105,23 +1104,23 @@ const Dashboard = () => {
                         [1, 2, 3].map((i) => (
                           <div key={i} className="animate-pulse bg-card rounded-xl p-4 border min-h-[200px]">
                             <div className="flex space-x-3">
-                              <div className="rounded-full bg-muted h-10 w-10"></div>
+                              <div className="w-10 h-10 rounded-full bg-muted"></div>
                               <div className="flex-1 space-y-2">
-                                <div className="h-4 bg-muted rounded w-3/4"></div>
-                                <div className="h-3 bg-muted rounded w-1/2"></div>
-                                <div className="h-3 bg-muted rounded w-2/3"></div>
+                                <div className="w-3/4 h-4 rounded bg-muted"></div>
+                                <div className="w-1/2 h-3 rounded bg-muted"></div>
+                                <div className="w-2/3 h-3 rounded bg-muted"></div>
                               </div>
                             </div>
                             <div className="mt-4 space-y-2">
-                              <div className="h-3 bg-muted rounded w-full"></div>
-                              <div className="h-3 bg-muted rounded w-5/6"></div>
-                              <div className="h-3 bg-muted rounded w-4/5"></div>
+                              <div className="w-full h-3 rounded bg-muted"></div>
+                              <div className="w-5/6 h-3 rounded bg-muted"></div>
+                              <div className="w-4/5 h-3 rounded bg-muted"></div>
                             </div>
                           </div>
                         ))
                       ) : (
-                        <div className="text-center py-12">
-                          <svg className="w-12 h-12 text-muted-foreground mx-auto mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <div className="py-12 text-center">
+                          <svg className="w-12 h-12 mx-auto mb-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M12 2L13.09 8.26L19 9L13.09 9.74L12 16L10.91 9.74L5 9L10.91 8.26L12 2Z"/>
                           </svg>
                           <p className="text-muted-foreground">No summaries available yet</p>
@@ -1133,18 +1132,18 @@ const Dashboard = () => {
               ) : (
                 <div 
                   key={`${viewMode}-view-${topicStreams.length}`} 
-                  className="streams-view w-full max-w-full overflow-x-hidden"
+                  className="w-full max-w-full overflow-x-hidden streams-view"
                 >
                   {topicStreams.length === 0 ? (
-                    <div className="text-center py-16">
-                      <svg className="w-16 h-16 text-muted-foreground mx-auto mb-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <div className="py-16 text-center">
+                      <svg className="w-16 h-16 mx-auto mb-6 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M12 2L13.09 8.26L19 9L13.09 9.74L12 16L10.91 9.74L5 9L10.91 8.26L12 2Z"/>
                       </svg>
-                      <h3 className="text-xl font-semibold text-foreground mb-2">No Topic Streams Yet</h3>
-                      <p className="text-muted-foreground mb-6">Create your first topic stream to start tracking trends</p>
+                      <h3 className="mb-2 text-xl font-semibold text-foreground">No Topic Streams Yet</h3>
+                      <p className="mb-6 text-muted-foreground">Create your first topic stream to start tracking trends</p>
                       <button
                         onClick={() => setShowForm(true)}
-                        className="inline-flex items-center space-x-2 px-6 py-3 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 hover-lift"
+                        className="inline-flex items-center px-6 py-3 space-x-2 font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 hover-lift"
                       >
                         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M12 5v14M5 12h14"/>
@@ -1182,7 +1181,7 @@ const Dashboard = () => {
                               <TopicStreamWidget stream={selectedStream} onDelete={handleDeleteStream} onUpdate={handleUpdateStream} isGridView={false} onDragStart={(e) => handleDragStart(e, selectedStream.id)} onDragEnd={handleDragEnd} onDragOver={(e) => handleDragOver(e, selectedStream.id)} onDrop={(e) => handleDrop(e, selectedStream.id)} isDraggedOver={dragOverStreamId === selectedStream.id} isDragging={draggedStreamId === selectedStream.id} isNewlyCreated={newlyCreatedStreamId === selectedStream.id} isSelected={true} />
                             </div>
                           ) : (
-                            <div className="text-center py-16 text-muted-foreground">
+                            <div className="py-16 text-center text-muted-foreground">
                               <svg className="w-12 h-12 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
                               Select a stream from the sidebar to view its content.
                             </div>
@@ -1199,7 +1198,7 @@ const Dashboard = () => {
           {/* Deep Dive Chat Modal */}
           {showDeepDive && selectedSummary && (
             <div 
-              className="fixed bg-black/50 backdrop-blur-sm animate-in fade-in duration-300"
+              className="fixed duration-300 bg-black/50 backdrop-blur-sm animate-in fade-in"
               style={{ 
                 position: 'fixed',
                 top: '0',
@@ -1218,7 +1217,7 @@ const Dashboard = () => {
               }}
               >
               <div 
-                className="bg-card rounded-xl shadow-xl animate-in slide-in-from-bottom-4 duration-300"
+                className="duration-300 shadow-xl bg-card rounded-xl animate-in slide-in-from-bottom-4"
                 style={{
                   position: 'relative',
                   width: '100%',
