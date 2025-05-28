@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException, status, Request, Background
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import text
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 from enum import Enum
 import jwt
@@ -847,10 +847,15 @@ async def optimize_prompt(
     perplexity_api = PerplexityAPI()
     
     # Construct the optimization prompt (adapted from user's reference)
+    from datetime import datetime, timezone
+    current_datetime = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    
     optimization_prompt = f"""You are an expert prompt engineer.
 The user has a "Topic Query" that will be used to generate regular updates using a large language model.
 Your task is to refine the "Topic Query" to be more effective.
 The goal is to help the user receive comprehensive and nuanced updates, capturing both major developments and subtle details related to the topic.
+
+Current Date/Time: {current_datetime}
 
 Current Topic Query: \"\"\"
 {request.topic_query}
@@ -863,6 +868,7 @@ Consider incorporating techniques such as:
 - Broadening or narrowing the scope appropriately to ensure comprehensive coverage without losing specificity.
 - Ensuring the prompt encourages depth, nuance, and the inclusion of diverse perspectives where applicable.
 - Phrasing that helps the model understand the desired level of detail and complexity.
+- When relevant, include appropriate time references (e.g., "past 6 months", "recent developments") based on the current date.
 
 Return ONLY the revised "Topic Query" text. Do not include any other explanatory text, preamble, or markdown formatting around the prompt itself. The output should be ready to be directly used as the new topic query."""
 
@@ -883,24 +889,21 @@ Return ONLY the revised "Topic Query" text. Do not include any other explanatory
         # Clean up R1-1776 thinking tokens and other artifacts
         import re
         
-        # Remove <think> blocks (including multiline)
+        # Remove <think> blocks (including multiline) - this should be precise
         optimized_query = re.sub(r'<think>.*?</think>', '', optimized_query, flags=re.DOTALL | re.IGNORECASE)
         
-        # Remove ```think blocks 
+        # Remove ```think blocks specifically (not all code blocks)
         optimized_query = re.sub(r'```think.*?```', '', optimized_query, flags=re.DOTALL | re.IGNORECASE)
         
-        # Remove any remaining thinking artifacts
-        thinking_patterns = [
-            r'\[.*?\]',  # Remove bracket notation like [ClarityAccuracyGoal: ...]
-            r'```.*?```',  # Remove any remaining code blocks
-        ]
-        
-        for pattern in thinking_patterns:
-            optimized_query = re.sub(pattern, '', optimized_query, flags=re.DOTALL)
-        
         # Clean up extra whitespace and newlines
-        optimized_query = re.sub(r'\n\s*\n', '\n', optimized_query)  # Multiple newlines to single
+        optimized_query = re.sub(r'\n\s*\n+', '\n\n', optimized_query)  # Multiple newlines to double
         optimized_query = optimized_query.strip()
+        
+        # Remove wrapping quotes if the entire response is quoted
+        if optimized_query.startswith('"') and optimized_query.endswith('"'):
+            optimized_query = optimized_query[1:-1].strip()
+        elif optimized_query.startswith("'") and optimized_query.endswith("'"):
+            optimized_query = optimized_query[1:-1].strip()
         
         # Remove common prefixes that the AI might add
         prefixes_to_remove = [
