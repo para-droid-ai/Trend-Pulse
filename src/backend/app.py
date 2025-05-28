@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException, status, Request, Background
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import text
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 from enum import Enum
 import jwt
@@ -183,6 +183,13 @@ class DeepDiveResponse(BaseModel):
 class UpdateNowOptions(BaseModel):
     ignore_all_previous_summaries_override: Optional[bool] = False
 
+class OptimizePromptRequest(BaseModel):
+    topic_query: str
+
+class OptimizePromptResponse(BaseModel):
+    optimized_query: str
+    model: str
+
 # Define this constant near the top of app.py or in a config file
 MAX_PREV_CONTEXT_TOKENS_SMART_LIMIT = 20000 # Example: Approx 20k tokens for history
 
@@ -340,10 +347,14 @@ async def perform_search_and_create_summary(
         model = topic_stream.model_type.value
         base_query = topic_stream.query
 
+        # Add current date/time context to prevent temporal hallucinations
+        from datetime import datetime, timezone
+        current_datetime = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+
         if prev_summaries_concatenated_content:
-            full_query = f"Provide ONLY NEW information about {base_query} that wasn't in the previous updates. Focus on recent developments, news, and updates."
+            full_query = f"Current Date/Time: {current_datetime}\n\nProvide ONLY NEW information about {base_query} that wasn't in the previous updates. Focus on recent developments, news, and updates."
         else:
-            full_query = base_query
+            full_query = f"Current Date/Time: {current_datetime}\n\n{base_query}"
 
         full_query += ". Format your response using markdown for better readability."
 
@@ -370,7 +381,7 @@ async def perform_search_and_create_summary(
                 final_system_prompt_for_api = f"{final_system_prompt_for_api.rstrip()} {word_count_instruction}"
             else:
                 # Default prompt from PerplexityAPI class when no user prompt is set
-                default_perplexity_system_prompt = "You are a helpful assistant that summarizes recent information about the user\'s query. Focus on developments and news from the specified time period. Present the key findings clearly and concisely, citing sources. Please format your response using markdown for better readability. Use markdown formatting for headings, lists, links, emphasis, and any code snippets or tables. Include citations with proper markdown hyperlinks."
+                default_perplexity_system_prompt = f"Current Date/Time: {current_datetime}\n\nYou are a helpful assistant that summarizes recent information about the user's query. Focus on developments and news from the specified time period. Present the key findings clearly and concisely, citing sources. Please format your response using markdown for better readability. Use markdown formatting for headings, lists, links, emphasis, and any code snippets or tables. Include citations with proper markdown hyperlinks."
                 final_system_prompt_for_api = f"{default_perplexity_system_prompt} {word_count_instruction}"
         
         logger.debug(f"For stream {topic_stream.id} - Final User Query for API: {full_query[:200]}...")
@@ -785,7 +796,10 @@ async def deep_dive(
     # Use the topic stream's custom system prompt if available, otherwise a default for chat
     deep_dive_system_content = topic_stream.system_prompt
     if not deep_dive_system_content:
-        deep_dive_system_content = f"You are a helpful AI assistant. The user is exploring the topic: \'{topic_stream.query}\'. Answer their questions clearly and concisely. Format your response using markdown."
+        # Add current date/time context to prevent temporal hallucinations
+        from datetime import datetime, timezone
+        current_datetime = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+        deep_dive_system_content = f"Current Date/Time: {current_datetime}\n\nYou are a helpful AI assistant. The user is exploring the topic: '{topic_stream.query}'. Answer their questions clearly and concisely. Format your response using markdown."
 
     messages_for_perplexity.append({
         "role": "system",
@@ -795,7 +809,12 @@ async def deep_dive(
     # Conditionally add initial stream summary context
     # This logic is adjusted to only add summary if include_stream_summary_context is true AND it's the first message (no chat_history)
 
+    # Add current date/time context to prevent temporal hallucinations
+    from datetime import datetime, timezone
+    current_datetime = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+
     contextual_question = (
+        f"Current Date/Time: {current_datetime}\n\n"
         f"Regarding the topic \"{topic_stream.query}\" and the following summary:\n\n"
         f"Summary: {summary.content}\n\n"
         f"User question: {request.question}"
@@ -827,6 +846,109 @@ async def deep_dive(
     sources_list = result.get("sources", [])
     
     return DeepDiveResponse(answer=answer, sources=sources_list, model=model_to_use)
+
+@app.post("/optimize-prompt/", response_model=OptimizePromptResponse)
+async def optimize_prompt(
+    request: OptimizePromptRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Optimize a topic query prompt using Sonar AI.
+    Takes a topic query and returns an optimized version for better search results.
+    """
+    perplexity_api = PerplexityAPI()
+    
+    # Construct the optimization prompt (adapted from user's reference)
+    from datetime import datetime, timezone
+    current_datetime = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    
+    optimization_prompt = f"""You are an expert prompt engineer.
+The user has a "Topic Query" that will be used to generate regular updates using a large language model.
+Your task is to refine the "Topic Query" to be more effective.
+The goal is to help the user receive comprehensive and nuanced updates, capturing both major developments and subtle details related to the topic.
+
+Current Date/Time: {current_datetime}
+
+Current Topic Query: \"\"\"
+{request.topic_query}
+\"\"\"
+
+Analyze the Topic Query and rewrite it to be clearer, more specific, and better structured for querying a large language model.
+Consider incorporating techniques such as:
+- Explicitly asking for different types of information (e.g., "latest news, expert opinions, emerging trends, potential impacts, detailed explanations of specific sub-topics").
+- Clarifying ambiguities or overly broad statements.
+- Broadening or narrowing the scope appropriately to ensure comprehensive coverage without losing specificity.
+- Ensuring the prompt encourages depth, nuance, and the inclusion of diverse perspectives where applicable.
+- Phrasing that helps the model understand the desired level of detail and complexity.
+- When relevant, include appropriate time references (e.g., "past 6 months", "recent developments") based on the current date.
+
+Return ONLY the revised "Topic Query" text. Do not include any other explanatory text, preamble, or markdown formatting around the prompt itself. The output should be ready to be directly used as the new topic query."""
+
+    try:
+        logger.info(f"Optimizing prompt for user {current_user.id}: '{request.topic_query[:100]}...'")
+        
+        result = await perplexity_api.search_perplexity(
+            query=optimization_prompt,
+            model="r1-1776",  # Use R1-1776 model for prompt optimization
+            recency_filter="all_time",  # No need for recent info for prompt optimization
+            temperature=0.3,  # Lower temperature for more consistent optimization
+            detail_level="detailed"
+        )
+        
+        optimized_query = result.get("answer", "").strip()
+        model_used = result.get("model", "r1-1776")
+        
+        # Clean up R1-1776 thinking tokens and other artifacts
+        import re
+        
+        # Remove <think> blocks (including multiline) - this should be precise
+        optimized_query = re.sub(r'<think>.*?</think>', '', optimized_query, flags=re.DOTALL | re.IGNORECASE)
+        
+        # Remove ```think blocks specifically (not all code blocks)
+        optimized_query = re.sub(r'```think.*?```', '', optimized_query, flags=re.DOTALL | re.IGNORECASE)
+        
+        # Clean up extra whitespace and newlines
+        optimized_query = re.sub(r'\n\s*\n+', '\n\n', optimized_query)  # Multiple newlines to double
+        optimized_query = optimized_query.strip()
+        
+        # Remove wrapping quotes if the entire response is quoted
+        if optimized_query.startswith('"') and optimized_query.endswith('"'):
+            optimized_query = optimized_query[1:-1].strip()
+        elif optimized_query.startswith("'") and optimized_query.endswith("'"):
+            optimized_query = optimized_query[1:-1].strip()
+        
+        # Remove common prefixes that the AI might add
+        prefixes_to_remove = [
+            "Here's the optimized topic query:",
+            "Optimized topic query:",
+            "The revised topic query is:",
+            "Revised topic query:",
+            "Topic query:",
+            "Query:",
+        ]
+        
+        for prefix in prefixes_to_remove:
+            if optimized_query.lower().startswith(prefix.lower()):
+                optimized_query = optimized_query[len(prefix):].strip()
+        
+        if not optimized_query:
+            # Fallback to original query if optimization failed
+            optimized_query = request.topic_query
+            logger.warning(f"Optimization returned empty result, using original query")
+        
+        logger.info(f"Successfully optimized prompt for user {current_user.id}")
+        
+        return OptimizePromptResponse(
+            optimized_query=optimized_query,
+            model=model_used
+        )
+        
+    except Exception as e:
+        logger.error(f"Error optimizing prompt: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error optimizing prompt: {str(e)}"
+        )
 
 @app.post("/topic-streams/{topic_stream_id}/summaries/", response_model=SummaryResponse)
 def append_summary(

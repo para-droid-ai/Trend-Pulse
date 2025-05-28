@@ -265,4 +265,27 @@ export const deepDiveAPI = {
   }
 };
 
+// Optimize Prompt API calls
+export const optimizePromptAPI = {
+  optimize: async (topicQuery) => {
+    try {
+      console.log(`Optimizing prompt: "${topicQuery}"`);
+      const response = await api.post('/optimize-prompt/', {
+        topic_query: topicQuery
+      });
+      console.log('Prompt optimization response received');
+      return {
+        optimized_query: response.data.optimized_query,
+        model: response.data.model
+      };
+    } catch (error) {
+      console.error('Optimize prompt API error:', error);
+      
+      // Get a more detailed error message if available
+      const errorMessage = error.response?.data?.detail || error.message || 'An error occurred while optimizing the prompt';
+      throw new Error(`Prompt optimization failed: ${errorMessage}`);
+    }
+  }
+};
+
 export default api; 

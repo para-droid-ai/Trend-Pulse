@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import OrbitalLoadingAnimation from './OrbitalLoadingAnimation';
+import { optimizePromptAPI } from '../services/api';
 
 const TopicStreamForm = ({ onSubmit, initialData = null, isEditing = false, onCancel }) => {
   const [formData, setFormData] = useState({
@@ -18,6 +19,10 @@ const TopicStreamForm = ({ onSubmit, initialData = null, isEditing = false, onCa
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitProgress, setSubmitProgress] = useState('');
   const [error, setError] = useState('');
+  
+  // Optimize prompt state
+  const [isOptimizing, setIsOptimizing] = useState(false);
+  const [optimizeError, setOptimizeError] = useState('');
   
   useEffect(() => {
     if (initialData) {
@@ -619,6 +624,37 @@ exact_flow:
     ? currentDetailExplanation.tokens?.reasoning 
     : currentDetailExplanation.tokens?.non_reasoning;
 
+  const handleOptimizePrompt = async () => {
+    if (!formData.query.trim()) {
+      setOptimizeError('Please enter a topic query before optimizing.');
+      return;
+    }
+
+    setIsOptimizing(true);
+    setOptimizeError('');
+
+    try {
+      const result = await optimizePromptAPI.optimize(formData.query);
+      
+      // Update the query field with the optimized version
+      setFormData(prevFormData => ({
+        ...prevFormData,
+        query: result.optimized_query
+      }));
+      
+      // Clear any existing query errors since we have new content
+      if (errors.query) {
+        setErrors(prevErrors => ({ ...prevErrors, query: undefined }));
+      }
+      
+    } catch (err) {
+      console.error('Optimize prompt error:', err);
+      setOptimizeError(err.message || 'Failed to optimize prompt. Please try again.');
+    } finally {
+      setIsOptimizing(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -682,6 +718,40 @@ exact_flow:
         <p className="mt-1 text-xs text-muted-foreground">
           This query will be used to search for information on this topic.
         </p>
+        
+        {/* Optimize Prompt Button */}
+        <div className="mt-3">
+          <button
+            type="button"
+            onClick={handleOptimizePrompt}
+            disabled={isOptimizing || isSubmitting || !formData.query.trim()}
+            className={`inline-flex items-center space-x-2 px-4 py-2 border border-border rounded-lg shadow-sm text-sm font-medium text-foreground bg-background hover:bg-muted focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ring transition-all duration-200 ${
+              isOptimizing || isSubmitting || !formData.query.trim() 
+                ? 'opacity-50 cursor-not-allowed' 
+                : 'hover:shadow-md hover:-translate-y-0.5 active:scale-95'
+            }`}
+          >
+            {isOptimizing ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-foreground border-t-transparent"></div>
+                <span>Optimizing...</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 20h9"/>
+                  <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                  <path d="M8.5 5.5L18.5 15.5"/>
+                </svg>
+                <span>Optimize Prompt</span>
+              </>
+            )}
+          </button>
+          
+          {optimizeError && (
+            <p className="mt-2 text-sm text-destructive">{optimizeError}</p>
+          )}
+        </div>
       </div>
       
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
