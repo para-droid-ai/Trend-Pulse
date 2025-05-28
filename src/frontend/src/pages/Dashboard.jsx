@@ -12,6 +12,7 @@ import ThemeSelector from '../components/ThemeSelector';
 import StreamSidebar from '../components/StreamSidebar';
 import StreamLoadingOverlay from '../components/StreamLoadingOverlay';
 import { useTheme } from '../context/ThemeContext';
+// import { Resizable } from 're-resizable';
 
 const Dashboard = () => {
   const { user, logout } = useContext(AuthContext);
@@ -288,12 +289,10 @@ const Dashboard = () => {
             localStorage.removeItem('streamOrder');
             // Re-fetch and re-order based on the now-cleared localStorage (will just use backend order)
             const reOrderedStreams = getOrderedStreams(data, 'last_updated', 'desc');
-            // Add an explicit filter to remove known problematic stream IDs (1, 2, 11)
-            const finalStreams = reOrderedStreams.filter(stream => ![1, 2, 11].includes(stream.id));
-            setTopicStreams(finalStreams);
-             if (finalStreams.length > 0 && !selectedStream) {
-              console.log("Attempting to select first stream after clearing localStorage:", finalStreams[0]);
-              setSelectedStream(finalStreams[0]);
+            setTopicStreams(reOrderedStreams);
+             if (reOrderedStreams.length > 0 && !selectedStream) {
+              console.log("Attempting to select first stream after clearing localStorage:", reOrderedStreams[0]);
+              setSelectedStream(reOrderedStreams[0]);
               console.log("First stream selected after clearing localStorage.");
             }
             return; // Exit the function after clearing and setting
@@ -306,12 +305,10 @@ const Dashboard = () => {
       }
 
       // If no stale IDs or no saved order, just set the valid streams
-      // Add an explicit filter to remove known problematic stream IDs (1, 2, 11)
-      const finalStreams = validStreams.filter(stream => ![1, 2, 11].includes(stream.id));
-      setTopicStreams(finalStreams);
-      if (finalStreams.length > 0 && !selectedStream) {
-        console.log("Attempting to select first stream:", finalStreams[0]);
-        setSelectedStream(finalStreams[0]);
+      setTopicStreams(validStreams);
+      if (validStreams.length > 0 && !selectedStream) {
+        console.log("Attempting to select first stream:", validStreams[0]);
+        setSelectedStream(validStreams[0]);
         console.log("First stream selected.");
       } else {
           console.log("No streams to select or stream already selected.");
@@ -547,7 +544,7 @@ const Dashboard = () => {
               streamsCopy[streamIndex] = updatedStream;
           }
           const sortedStreams = getOrderedStreams(streamsCopy, 'last_updated', 'desc');
-          return sortedStreams.filter(stream => ![1, 2, 11].includes(stream.id));
+          return sortedStreams;
       });
 
       return newSummary; 
