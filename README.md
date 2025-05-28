@@ -208,10 +208,14 @@ This dynamic context management ensures that users receive relevant and non-redu
             alembic revision -m "your_description_of_changes" --autogenerate
             ```
             Then review and edit the generated script in `alembic/versions/` before applying.
-6.  Run the backend server (from the project root):
+6.  Run the backend server (from the project root). The 2nd command is for Powershell on Windows:
     ```bash
     python src/backend/app.py
     ```
+    ```powershell
+    python -m uvicorn app:app --reload --port 8000
+    ```
+
     The backend will typically run on `http://127.0.0.1:8000`.
 
 ### Frontend Setup
