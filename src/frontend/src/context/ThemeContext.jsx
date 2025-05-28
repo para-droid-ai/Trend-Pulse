@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { themes, getTheme } from '../lib/themes';
+import api from '../services/api';
 // We'll assume an AuthContext exists and provides user and token, or a way to make authenticated API calls.
 // For now, direct localStorage access for token is a placeholder. A real app would use context.
 // import AuthContext from './AuthContext'; // Assuming this might be used later
@@ -12,32 +13,6 @@ export const useTheme = () => {
     throw new Error('useTheme must be used within a ThemeProvider');
   }
   return context;
-};
-
-// apiClient for the MOCK backend endpoint
-const apiClient = {
-  put: async (url, data, token) => {
-    try {
-      const response = await fetch(`/api${url}`, { // Assuming /api prefix
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ detail: response.statusText }));
-        console.error('Mock preferences save API failed:', errorData);
-        // In a real app, you might throw an error or handle it
-        return null; // Indicate failure
-      }
-      return await response.json(); // Return mock response data
-    } catch (error) {
-      console.error('Error calling mock preferences save API:', error);
-      return null; // Indicate failure
-    }
-  },
 };
 
 export const ThemeProvider = ({ children, userId }) => {
@@ -92,21 +67,20 @@ export const ThemeProvider = ({ children, userId }) => {
     }
   };
 
-  // Function to "save" preferences (calls mock API then saves to localStorage)
+  // Function to "save" preferences (calls API then saves to localStorage)
   const saveUserPreferences = async (themeToSave, modeToSave) => {
-    const token = localStorage.getItem('authToken');
-    if (token && userId) { // Only call mock API if logged in
-      // console.log(`Calling mock API: Theme=${themeToSave}, Mode=${modeToSave}`);
-      const mockResponse = await apiClient.put('/users/me/preferences', {
-        preferred_theme: themeToSave,
-        preferred_mode: modeToSave,
-      }, token);
-      
-      // if (mockResponse) { // Optional: check if mock call was "successful"
-      //   console.log("Mock API call successful, saving to user-specific localStorage.");
-      // }
+    if (userId) { // Only call API if logged in
+      try {
+        await api.put('/users/me/preferences', {
+          preferred_theme: themeToSave,
+          preferred_mode: modeToSave,
+        });
+      } catch (error) {
+        console.error('Failed to save preferences to API:', error);
+        // Continue to save locally even if API fails
+      }
     }
-    // Always save to localStorage regardless of mock API call outcome for demo robustness
+    // Always save to localStorage regardless of API call outcome for demo robustness
     savePreferencesToLocalStorage(themeToSave, modeToSave);
   };
 
@@ -121,9 +95,9 @@ export const ThemeProvider = ({ children, userId }) => {
         return;
     }
     
-    Object.entries(themeDetails.colors).forEach(([key, value]) => {
+    for (const [key, value] of Object.entries(themeDetails.colors)) {
       document.documentElement.style.setProperty(`--${key}`, value);
-    });
+    }
 
     const effectiveIsDark = currentTheme.endsWith('-dark') || themes[currentTheme]?.isDarkOnly;
     if (effectiveIsDark) {

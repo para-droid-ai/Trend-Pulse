@@ -67,7 +67,12 @@ function App() {
     <DndWrapper>
       <ThemeProvider userId={userId}>
         <AuthContext.Provider value={{ user, userId, isAuthenticated, login, logout }}>
-          <Router>
+          <Router 
+            future={{
+              v7_startTransition: true,
+              v7_relativeSplatPath: true
+            }}
+          >
             <Routes>
               <Route path="/login" element={isAuthenticated ? <Navigate to="/" /> : <Login />} />
               <Route path="/register" element={isAuthenticated ? <Navigate to="/" /> : <Register />} />
