@@ -37,8 +37,9 @@ api.interceptors.response.use(
       console.log('Authentication error detected, logging out user');
       
       // Clear auth tokens and redirect to login if unauthorized
-      localStorage.removeItem('token');
+      localStorage.removeItem('authToken');
       localStorage.removeItem('user');
+      localStorage.removeItem('user_id');
       
       // Only redirect if we're not already on the login page
       if (!window.location.pathname.includes('/login')) {

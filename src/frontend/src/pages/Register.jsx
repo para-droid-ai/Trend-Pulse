@@ -31,7 +31,7 @@ const Register = () => {
       
       // Login the user after successful registration
       const response = await authAPI.login(email, password);
-      login({ email }, response.access_token);
+      login(response);
       
       // Redirect to dashboard
       navigate('/');
