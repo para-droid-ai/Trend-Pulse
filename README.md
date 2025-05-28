@@ -12,9 +12,9 @@ TrendPulse Dashboard is a customizable web application that empowers users to tr
 
 *Grid view*
 
-![TrendPulse Dashboard Demo](docs/Recording%202025-05-11%20at%2012.14.23.gif)
+[![TrendPulse Dashboard Demo](https://img.youtube.com/vi/4ev8Qoidxz4/0.jpg)](https://www.youtube.com/watch?v=4ev8Qoidxz4)
 
-*May 11th 2025 v1 TrendPulse Dashboard, showing mobile feed view, list view, and grid view, while Update Stream is run and returns a new summary.*
+*Youtube Demo, Click to load page in new tab.*
 
 ## Core Features
 
