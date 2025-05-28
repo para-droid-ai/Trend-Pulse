@@ -28,6 +28,7 @@ TrendPulse Dashboard is a customizable web application that empowers users to tr
     -   Adjust AI temperature for summary generation.
     -   Set the depth of historical context (previous summaries) to be considered for new updates.
     -   Toggle automatic updates on or off per stream.
+    -  ![edit-stream-View](docs/edit_stream.png)
 -   **View & Organize:** Manage your streams in a clear list or grid view on the dashboard.
 
 ### Real-time Summaries & Updates
@@ -79,6 +80,8 @@ TrendPulse Dashboard is a customizable web application that empowers users to tr
     -   Access a dedicated Theme Selector modal (shortcut: `Ctrl+Alt+T` or `⌘+⌥+T`) to choose from a curated list of themes.
     -   Selected themes and mode preferences are saved to local storage for persistence across sessions for logged-in users.
     -   Themes are designed with distinct light and dark variants, and some themes are exclusively light or dark.
+    -  ![light-theme-View](docs/Theme_light.png)
+    -  ![light-theme-View](docs/dark-theme.png)
 
 ## Sonar Models Used in TrendPulse
 
