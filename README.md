@@ -266,6 +266,12 @@ The application primarily interacts with Perplexity's `/chat/completions` endpoi
 -   `max_tokens`: Calculated based on detail level and whether the model is a reasoning type to ensure adequate response length.
 -   `temperature`: User-configurable per stream for summary generation; a default is used for chat.
 
+## Additional Screenshots
+-   New Stream creation animation
+-   ![Grid-view-dark-theme](docs/new_stream_creation_light.png)
+-   Dark Theme Grid
+-   ![New Stream-creation-light-theme](docs/grid_dark_theme.png)
+
 ## Contributing
 
 -   Follow the existing file structure and coding style.
