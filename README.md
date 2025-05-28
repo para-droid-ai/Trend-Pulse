@@ -196,22 +196,20 @@ This dynamic context management ensures that users receive relevant and non-redu
         $env:PERPLEXITY_API_KEY="your_api_key_here"
         ```
 5.  **Database Setup:**
-    *   The SQLite database file (`trendpulse.db`) will be **automatically created** in the `src/backend/` directory when you first run the backend server if it doesn't already exist. The necessary tables will also be created automatically by SQLAlchemy based on `src/backend/models.py`.
-    *   **Database Migrations (Alembic):** Alembic is used to manage changes to the database schema *after* its initial creation.
-        *   The Alembic configuration is in `alembic.ini` (project root) and `alembic/env.py`.
-        *   To apply migrations (e.g., after pulling changes that include new migration scripts):
+6.    *   The SQLite database file (`trendpulse.db`) will be **automatically created** in the `src/backend/` directory when you first run the backend server if it doesn't already exist. The necessary tables will also be created automatically by SQLAlchemy based on `src/backend/models.py`.
+      *   **Skip to step 6 for new installs.** The following steps are only if a table migration is needed due to tables added to the database.
+           *   Database Migrations (Alembic): Alembic is used to manage changes to the database schema *after* its initial creation.
+           *   The Alembic configuration is in `alembic.ini` (project root) and `alembic/env.py`.
+           *   To apply migrations (e.g., after pulling changes that include new migration scripts):
             ```bash
             alembic upgrade head
             ```
-        *   To create a new migration script after changing `src/backend/models.py`:
+           *   To create a new migration script after changing `src/backend/models.py`:
             ```bash
             alembic revision -m "your_description_of_changes" --autogenerate
             ```
             Then review and edit the generated script in `alembic/versions/` before applying.
-6.  Run the backend server (from the project root). The 2nd command is for Powershell on Windows:
-    ```bash
-    python src/backend/app.py
-    ```
+7.  Navigate to the backend directory to run the backend server (cd src/backend).
     ```powershell
     python -m uvicorn app:app --reload --port 8000
     ```
