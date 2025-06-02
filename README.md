@@ -4,17 +4,19 @@ TrendPulse Dashboard is a customizable web application that empowers users to tr
 
 ## Demo
 
+[![TrendPulse Dashboard Demo](https://img.youtube.com/vi/4ev8Qoidxz4/0.jpg)](https://www.youtube.com/watch?v=4ev8Qoidxz4)
+
+***[Youtube Demo](https://www.youtube.com/watch?v=4ev8Qoidxz4), CTLR+Click image to load page in new tab.***
+
 ![TrendPulse List View](docs/list_view.png)
+![TrendPulse Light_List View](docs/light_theme_list2.png)
 
 *List view*
 
 ![TrendPulse Grid View](docs/grid_view.png)
+![TrendPulse Light-List View](docs/light_theme_grid.png)
 
 *Grid view*
-
-![TrendPulse Dashboard Demo](docs/Recording%202025-05-11%20at%2012.14.23.gif)
-
-*May 11th 2025 v1 TrendPulse Dashboard, showing mobile feed view, list view, and grid view, while Update Stream is run and returns a new summary.*
 
 ## Core Features
 
@@ -265,6 +267,17 @@ The application primarily interacts with Perplexity's `/chat/completions` endpoi
 -   `web_search_options.search_context_size`: Adjusted based on the stream's detail level (e.g., 'medium', 'high').
 -   `max_tokens`: Calculated based on detail level and whether the model is a reasoning type to ensure adequate response length.
 -   `temperature`: User-configurable per stream for summary generation; a default is used for chat.
+
+## Additional Screenshots
+-   Add/Edit Stream
+-   ![New Stream-creation-light-theme](docs/edit_stream_light.png)
+-   New Stream creation animation
+-   ![Grid-view-dark-theme](docs/new_stream_creation_light.png)
+-   List View Stream Update
+-   ![list-view-stream-update-dark-theme](docs/Stream_update_dark_theme.png)
+-   Dark Theme Grid
+-   ![New Stream-creation-light-theme](docs/grid_dark_theme.png)
+
 
 ## Contributing
 
