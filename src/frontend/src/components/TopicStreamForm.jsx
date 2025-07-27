@@ -512,7 +512,8 @@ exact_flow:
     { value: 'sonar-reasoning', label: 'Sonar Reasoning' },
     { value: 'sonar-reasoning-pro', label: 'Sonar Reasoning Pro' },
     { value: 'sonar-deep-research', label: 'Sonar Deep Research' },
-    { value: 'r1-1776', label: 'R1-1776 (Offline)' }
+    { value: 'r1-1776', label: 'R1-1776 (Offline)' },
+    { value: 'gemini', label: 'Gemini' }
   ];
   
   const recencyFilterOptions = [

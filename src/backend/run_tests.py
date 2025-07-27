@@ -18,9 +18,9 @@ def main():
     
     # Run tests with coverage
     pytest_args = [
-        "test_perplexity_api.py",
+        ".",
         "-v",
-        "--cov=perplexity_api",
+        "--cov=.",
         "--cov-report=term-missing",
         "--cov-report=html"
     ]

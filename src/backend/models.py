@@ -22,6 +22,7 @@ class ModelType(str, PyEnum):
     SONAR_REASONING_PRO = "sonar-reasoning-pro"
     SONAR_DEEP_RESEARCH = "sonar-deep-research"
     R1_1776 = "r1-1776"
+    GEMINI = "gemini"
 
 class ContextHistoryLevel(str, PyEnum):
     NONE = "none"

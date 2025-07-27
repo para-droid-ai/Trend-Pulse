@@ -6,6 +6,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 from sqlalchemy.orm import Session
 from models import TopicStream, UpdateFrequency, Summary, DetailLevel, ModelType, ContextHistoryLevel
 from perplexity_api import PerplexityAPI, APIError, APIClientError, APIServerError, APINetworkError
+from gemini_api import generate_text
 from database import SessionLocal
 import schedule
 import sys
@@ -64,58 +65,43 @@ class TopicStreamScheduler:
         topic_stream = db.query(TopicStream).filter(TopicStream.id == stream_id).first()
         if not topic_stream:
             logger.warning(f"Topic stream {stream_id} not found for update.")
-            # Optionally remove the job if the stream is deleted
-            # self.remove_topic_stream(stream_id)
             return
-            
+
         logger.info(f"Updating topic stream {topic_stream.id}: {topic_stream.query}")
-        retries = 0
-        
-        while retries < self.MAX_RETRIES:
-            try:
-                # Use the new search_perplexity method
-                search_result = self.perplexity_api.search_perplexity(
+
+        summary_content = ""
+        sources_json = ""
+
+        try:
+            if topic_stream.model_type == ModelType.GEMINI:
+                summary_content = generate_text(topic_stream.query)
+            else:
+                perplexity_api = PerplexityAPI()
+                search_result = perplexity_api.search_perplexity(
                     query=topic_stream.query,
                     model=topic_stream.model_type.value,
                     recency_filter=topic_stream.recency_filter,
-                    search_focus="internet" # Or make this configurable?
+                    search_focus="internet"
                 )
-                
                 summary_content = search_result.get("answer", "")
-                # search_result["sources"] is already a JSON string here
                 sources_json = search_result.get("sources", json.dumps([]))
-                
-                if summary_content:
-                    new_summary = Summary(
-                        topic_stream_id=topic_stream.id,
-                        content=summary_content,
-                        sources=sources_json
-                    )
-                    db.add(new_summary)
-                    topic_stream.last_updated = datetime.utcnow()
-                    db.commit()
-                    logger.info(f"Successfully updated topic stream {topic_stream.id}")
-                    return # Exit retry loop on success
-                else:
-                    logger.warning(f"No summary content received for topic stream {topic_stream.id}")
-                    # Decide if this counts as a failure or just no update needed
-                    return # Exit loop if no content
-                    
-            except APIError as e:
-                logger.warning(f"API error for topic stream {topic_stream.id}, retry {retries + 1}/{self.MAX_RETRIES}: {e}")
-                retries += 1
-                if retries < self.MAX_RETRIES:
-                    time.sleep(self.RETRY_DELAY_SECONDS)
-                else:
-                    logger.error(f"Maximum retries reached for topic stream {topic_stream.id}: {e}")
-                    break # Exit loop after max retries
-            except Exception as e:
-                 logger.error(f"Unexpected error updating topic stream {topic_stream.id}: {e}", exc_info=True)
-                 break # Exit loop on unexpected errors
-                 
-        # If loop finished due to errors
-        if retries >= self.MAX_RETRIES:
-             logger.error(f"Failed to update topic stream {topic_stream.id} after {self.MAX_RETRIES} retries.")
+
+            if summary_content:
+                new_summary = Summary(
+                    topic_stream_id=topic_stream.id,
+                    content=summary_content,
+                    sources=sources_json,
+                    model=topic_stream.model_type.value
+                )
+                db.add(new_summary)
+                topic_stream.last_updated = datetime.utcnow()
+                db.commit()
+                logger.info(f"Successfully updated topic stream {topic_stream.id}")
+            else:
+                logger.warning(f"No summary content received for topic stream {topic_stream.id}")
+
+        except Exception as e:
+            logger.error(f"Unexpected error updating topic stream {topic_stream.id}: {e}", exc_info=True)
 
     def get_max_tokens(self, detail_level: DetailLevel) -> int:
         """Get the maximum tokens based on detail level"""

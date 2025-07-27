@@ -1,8 +1,8 @@
-"""refine_topicstream_last_updated_logic
+"""add gemini model type
 
-Revision ID: 90f137c451f9
-Revises: e2cab5cd23ac
-Create Date: 2025-05-19 14:37:09.803298
+Revision ID: 374d8dc549a4
+Revises: 74ea95eb8283
+Create Date: 2025-07-27 16:37:20.520812
 
 """
 from typing import Sequence, Union
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '90f137c451f9'
-down_revision: Union[str, None] = 'e2cab5cd23ac'
+revision: str = '374d8dc549a4'
+down_revision: Union[str, None] = '74ea95eb8283'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
