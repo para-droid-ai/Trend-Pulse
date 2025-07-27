@@ -72,7 +72,7 @@ class PerplexityAPI:
         after any optional system messages.
         """
         # Define the default system content
-        default_system_content = "You are a helpful assistant that summarizes recent information about the user\'s query. Focus on developments and news from the specified time period. Present the key findings clearly and concisely, citing sources. Please format your response using markdown for better readability. Use markdown formatting for headings, lists, links, emphasis, and any code snippets or tables. Include citations with proper markdown hyperlinks."
+        default_system_content = "You are a helpful assistant that summarizes recent information about the user's query. Focus on developments and news from the specified time period. Present the key findings clearly and concisely, citing sources. Please format your response using markdown for better readability. If you are not able to get search results or find relevant information, please state that clearly rather than providing speculative information. Do not repeat information that was already covered in previous summaries if they are provided."
 
         # Use custom_system_prompt if provided and not empty, otherwise use default
         system_content_to_use = custom_system_prompt if custom_system_prompt else default_system_content
@@ -84,25 +84,15 @@ class PerplexityAPI:
             }
         ]
         
-        # If we have a previous summary, we need to add a user message first,
-        # then the assistant's previous summary, then the new user query
         if previous_summary:
-            # Add a placeholder user message to maintain alternating roles
+            # Incorporate the previous summary directly into the user prompt as context
+            content = (
+                f"Based on the following previous summary, provide only new updates on the topic: '{query}'.\n\n"
+                f"Previous summary:\n{previous_summary}"
+            )
             messages.append({
                 "role": "user",
-                "content": "Please summarize information about the following topic."
-            })
-            
-            # Add the previous assistant response
-            messages.append({
-                "role": "assistant",
-                "content": previous_summary
-            })
-            
-            # Add the new user query as a follow-up
-            messages.append({
-                "role": "user",
-                "content": f"Now provide me with the latest updates on: {query}"
+                "content": content
             })
         else:
             # Simple case: just add the user query
@@ -382,20 +372,10 @@ class PerplexityAPI:
                     logger.info("Detected 'no new information' in response")
                     content = "No new information is available since the last update."
                 
-                # Attempt to extract citations from API response if available
-                raw_citations = raw_api_result.get("citations") or choice.get("citations")
-                sources_list = []
-                if isinstance(raw_citations, list) and raw_citations:
-                    for cit in raw_citations:
-                        if isinstance(cit, dict):
-                            url = cit.get("url") or cit.get("source") or str(cit)
-                        else:
-                            url = str(cit)
-                        sources_list.append(url)
-                    logger.debug(f"Extracted {len(sources_list)} sources from API citations")
-                else:
-                    sources_list = self._extract_sources_from_content(content)
-                    logger.debug(f"Extracted {len(sources_list)} sources from markdown content")
+                # Extract citations from the 'search_results' field, as per the new guide
+                search_results = raw_api_result.get("search_results", [])
+                sources_list = [result.get("url") for result in search_results if result.get("url")]
+                logger.debug(f"Extracted {len(sources_list)} sources from 'search_results'")
                 
                 # For R1-1776 model, always return empty sources list since it's an offline model
                 if model == "r1-1776":
@@ -429,46 +409,6 @@ class PerplexityAPI:
             logger.error(f"Unexpected error during Perplexity API call: {e}", exc_info=True)
             # Ensure a dictionary with a 'usage' key is returned even on error for consistent handling
             raise APIProcessingError(f"Error processing Perplexity API response: {e}")
-
-    def _extract_sources_from_content(self, content: str) -> List[str]:
-        """Extract sources from markdown content"""
-        sources = []
-        
-        # Try to find Sources section
-        if "Sources:" in content:
-            try:
-                # Extract everything after "Sources:" heading
-                sources_section = content.split("Sources:")[1].strip()
-                
-                # Extract URLs from markdown links [title](url)
-                import re
-                urls = re.findall(r'\[.*?\]\((https?://[^\s\)]+)\)', sources_section)
-                
-                if urls:
-                    sources = urls
-                    logger.debug(f"Extracted {len(sources)} sources using markdown link pattern")
-                else:
-                    # Fallback: try to extract raw URLs
-                    raw_urls = re.findall(r'https?://[^\s\)\]]+', sources_section)
-                    if raw_urls:
-                        sources = raw_urls
-                        logger.debug(f"Extracted {len(sources)} sources using raw URL pattern")
-            except Exception as e:
-                logger.warning(f"Failed to parse sources from content: {e}")
-        
-        # If no Sources section, try to find URLs throughout content
-        if not sources:
-            try:
-                import re
-                # Find all markdown links in the entire content
-                urls = re.findall(r'\[.*?\]\((https?://[^\s\)]+)\)', content)
-                if urls:
-                    sources = urls
-                    logger.debug(f"Extracted {len(sources)} sources from full content")
-            except Exception as e:
-                logger.warning(f"Failed to parse sources from full content: {e}")
-                
-        return sources
 
     async def ask_follow_up_question(
         self,
@@ -528,18 +468,9 @@ class PerplexityAPI:
                 message = choice.get('message', {})
                 content = message.get('content', '')
                 
-                # Attempt to extract citations for follow-up if provided
-                raw_citations = result.get("citations") or choice.get("citations") if (choice := result.get('choices', [{}])[0]) else None
-                follow_sources = []
-                if isinstance(raw_citations, list) and raw_citations:
-                    for cit in raw_citations:
-                        if isinstance(cit, dict):
-                            url = cit.get("url") or cit.get("source") or str(cit)
-                        else:
-                            url = str(cit)
-                        follow_sources.append(url)
-                else:
-                    follow_sources = self._extract_sources_from_content(content)
+                # Extract citations from the 'search_results' field
+                search_results = result.get("search_results", [])
+                follow_sources = [result.get("url") for result in search_results if result.get("url")]
                 
                 logger.debug(f"Follow-up response successful. Content length: {len(content)}, sources: {len(follow_sources)}")
                 
