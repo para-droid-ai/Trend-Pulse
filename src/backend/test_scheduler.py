@@ -6,7 +6,7 @@ from pathlib import Path
 from sqlalchemy.orm import Session
 from models import User, TopicStream, UpdateFrequency, DetailLevel, ModelType, Summary
 from scheduler import TopicStreamScheduler
-from database import SessionLocal, engine
+from database import SessionLocal
 
 # Add the src directory to Python path
 src_path = str(Path(__file__).parent.parent)
