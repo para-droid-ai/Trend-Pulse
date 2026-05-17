@@ -62,7 +62,6 @@ def get_scheduler() -> TopicStreamScheduler | None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global scheduler # Ensure you're using the global scheduler variable
-    # db_for_startup = SessionLocal() # No longer pass db here, scheduler will manage its own sessions per job
     try:
         logger.info("Application startup: Initializing TopicStreamScheduler...")
         # Pass the SessionLocal factory and the async function perform_search_and_create_summary
@@ -71,9 +70,6 @@ async def lifespan(app: FastAPI):
         logger.info("TopicStreamScheduler initialized and its thread started.")
     except Exception as e:
         logger.error(f"Failed to initialize scheduler during startup: {e}", exc_info=True)
-    # finally:
-        # db_for_startup.close() # No session to close here anymore
-    
     yield # Application runs here
     
     # Shutdown event
@@ -362,7 +358,6 @@ async def perform_search_and_create_summary(
             full_query += " DO NOT repeat information that was already covered in the previous updates."
 
         recency_filter_for_api = topic_stream.recency_filter # e.g. '1d', '1w'
-        # stream_custom_system_prompt = topic_stream.system_prompt # Old way
 
         # New logic for constructing the system prompt with word count
         user_custom_prompt = topic_stream.system_prompt
@@ -385,7 +380,6 @@ async def perform_search_and_create_summary(
                 final_system_prompt_for_api = f"{default_perplexity_system_prompt} {word_count_instruction}"
         
         logger.debug(f"For stream {topic_stream.id} - Final User Query for API: {full_query[:200]}...")
-        # logger.debug(f"For stream {topic_stream.id} - Using Custom System Prompt: '{stream_custom_system_prompt[:100]}...'") # Old log
         if final_system_prompt_for_api:
             logger.debug(f"For stream {topic_stream.id} - Effective System Prompt for API: {final_system_prompt_for_api[:250]}...")
         else:
