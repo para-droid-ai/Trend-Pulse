@@ -1,76 +1,95 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 
 const KeyboardShortcutsHelp = ({ isOpen, onClose }) => {
   const [isMac, setIsMac] = useState(false);
 
   useEffect(() => {
-    setIsMac(navigator.platform.toUpperCase().indexOf('MAC') >= 0);
+    setIsMac(navigator.platform.toUpperCase().indexOf("MAC") >= 0);
   }, []);
 
   if (!isOpen) return null;
 
-  const modifierKey = isMac ? '⌘' : 'Ctrl';
-  const altKey = isMac ? '⌥' : 'Alt';
+  const modifierKey = isMac ? "⌘" : "Ctrl";
+  const altKey = isMac ? "⌥" : "Alt";
 
   const shortcuts = [
-    { key: `${modifierKey} + ${altKey} + N`, description: 'Create new stream' },
-    { key: `${modifierKey} + 1`, description: 'Switch to list view' },
-    { key: `${modifierKey} + 2`, description: 'Switch to grid view' },
-    { key: `${modifierKey} + 3`, description: 'Switch to feed view' },
-    { key: `${modifierKey} + R`, description: 'Refresh streams' },
-    { key: `${modifierKey} + ${altKey} + T`, description: 'Open theme selector' },
-    { key: 'ESC', description: 'Close modals/forms' },
-    { key: `${modifierKey} + / or ${modifierKey} + ?`, description: 'Show this help' }
+    { key: `${modifierKey} + ${altKey} + N`, description: "Create new stream" },
+    { key: `${modifierKey} + 1`, description: "Switch to list view" },
+    { key: `${modifierKey} + 2`, description: "Switch to grid view" },
+    { key: `${modifierKey} + 3`, description: "Switch to feed view" },
+    { key: `${modifierKey} + R`, description: "Refresh streams" },
+    {
+      key: `${modifierKey} + ${altKey} + T`,
+      description: "Open theme selector",
+    },
+    { key: "ESC", description: "Close modals/forms" },
+    {
+      key: `${modifierKey} + / or ${modifierKey} + ?`,
+      description: "Show this help",
+    },
   ];
 
   return (
-    <div 
+    <div
       className="fixed bg-black/50 backdrop-blur-sm animate-in fade-in duration-300"
-      style={{ 
-        position: 'fixed',
-        top: '0',
-        left: '0',
-        width: '100vw',
-        height: '100vh',
+      style={{
+        position: "fixed",
+        top: "0",
+        left: "0",
+        width: "100vw",
+        height: "100vh",
         zIndex: 9999,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '1rem'
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "1rem",
       }}
       onClick={onClose}
     >
-      <div 
+      <div
         className="bg-card rounded-xl shadow-xl animate-in slide-in-from-bottom-4 duration-300"
         style={{
-          position: 'relative',
-          width: '100%',
-          maxWidth: '28rem',
-          maxHeight: '90vh',
-          margin: '0',
-          overflow: 'auto'
+          position: "relative",
+          width: "100%",
+          maxWidth: "28rem",
+          maxHeight: "90vh",
+          margin: "0",
+          overflow: "auto",
         }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-6 border-b border-border">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-foreground">Keyboard Shortcuts</h3>
+            <h3 className="text-lg font-semibold text-foreground">
+              Keyboard Shortcuts
+            </h3>
             <button
               onClick={onClose}
               className="p-2 text-muted-foreground hover:text-foreground rounded-lg hover:bg-accent transition-colors"
             >
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M18 6L6 18M6 6l12 12"/>
+              <svg
+                className="w-5 h-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M18 6L6 18M6 6l12 12" />
               </svg>
             </button>
           </div>
         </div>
 
-        <div className="p-6" style={{ maxHeight: 'calc(90vh - 8rem)', overflow: 'auto' }}>
+        <div
+          className="p-6"
+          style={{ maxHeight: "calc(90vh - 8rem)", overflow: "auto" }}
+        >
           <div className="space-y-3">
             {shortcuts.map((shortcut, index) => (
               <div key={index} className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">{shortcut.description}</span>
+                <span className="text-sm text-muted-foreground">
+                  {shortcut.description}
+                </span>
                 <kbd className="inline-flex items-center px-2 py-1 rounded-md bg-muted text-xs font-medium text-muted-foreground border border-border">
                   {shortcut.key}
                 </kbd>
@@ -89,4 +108,4 @@ const KeyboardShortcutsHelp = ({ isOpen, onClose }) => {
   );
 };
 
-export default KeyboardShortcutsHelp; 
+export default KeyboardShortcutsHelp;

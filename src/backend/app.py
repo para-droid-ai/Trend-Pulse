@@ -991,8 +991,6 @@ def delete_summary(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    # Debug print for troubleshooting
-    print(f"DELETE SUMMARY CALLED - Stream ID: {topic_stream_id}, Summary ID: {summary_id}, User ID: {current_user.id}")
     logger.info(f"DELETE SUMMARY CALLED - Stream ID: {topic_stream_id}, Summary ID: {summary_id}, User ID: {current_user.id}")
     
     try:
@@ -1000,41 +998,32 @@ def delete_summary(
         topic_stream = db.query(TopicStream).get(topic_stream_id)
         
         if not topic_stream:
-            print(f"ERROR: Topic stream {topic_stream_id} not found at all")
             raise HTTPException(status_code=404, detail=f"Topic stream {topic_stream_id} not found")
             
         # Check if the topic stream belongs to the current user
         if topic_stream.user_id != current_user.id:
-            print(f"ERROR: Topic stream {topic_stream_id} doesn't belong to user {current_user.id}, it belongs to user {topic_stream.user_id}")
             raise HTTPException(status_code=403, detail="You don't have permission to access this topic stream")
         
-        # Log that we found the topic stream
-        print(f"Topic stream {topic_stream_id} found for user {current_user.id}")
         
         # Direct database query to check if summary exists at all
         raw_summary = db.query(Summary).get(summary_id)
         if not raw_summary:
-            print(f"ERROR: Summary {summary_id} not found in database at all")
             raise HTTPException(status_code=404, detail=f"Summary {summary_id} not found in database")
         
         # Check if the summary belongs to the topic stream
         if raw_summary.topic_stream_id != topic_stream_id:
-            print(f"ERROR: Summary {summary_id} found but doesn't belong to topic stream {topic_stream_id}. It belongs to topic stream {raw_summary.topic_stream_id}")
             raise HTTPException(status_code=404, detail=f"Summary {summary_id} not found in topic stream {topic_stream_id}")
         
         # Delete the summary directly
-        print(f"Deleting summary {summary_id} from database")
         # Use SQLAlchemy's text() for raw SQL
         db.execute(text(f"DELETE FROM summaries WHERE id = :summary_id_param"), { "summary_id_param": summary_id })
         db.commit()
-        print(f"Successfully deleted summary {summary_id}")
         return {"message": "Summary deleted successfully"}
     except HTTPException as http_ex:
         # Re-raise HTTP exceptions
         raise http_ex
     except Exception as e:
         # Handle all other errors
-        print(f"ERROR deleting summary {summary_id}: {str(e)}")
         logger.error(f"Error deleting summary {summary_id}: {str(e)}", exc_info=True)
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error deleting summary: {str(e)}")
@@ -1042,7 +1031,6 @@ def delete_summary(
 @app.get("/test-log")
 async def test_log_endpoint():
     message = f"Test log endpoint hit at {datetime.utcnow().isoformat()}"
-    print(f"PRINT: {message}")
     logger.info(f"LOGGER.INFO: {message}")
     return {"message": message}
 
