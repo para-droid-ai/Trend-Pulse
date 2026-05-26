@@ -218,9 +218,9 @@
   - ✅ Add multiple detail levels (Backend `max_tokens` dynamically adjusted for these)
   - [ ] Real-time updates
 - [ ] Performance Optimization
+  - ✅ Response optimization (Fixed N+1 query in scheduler cleanup)
   - [ ] Caching implementation
   - [ ] Rate limiting
-  - [ ] Response optimization
 - [ ] UI/UX Improvements
   - [ ] Advanced filtering
   - [ ] Custom dashboard layouts
