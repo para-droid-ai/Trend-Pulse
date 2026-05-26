@@ -1,6 +1,6 @@
-# TrendPulse Dashboard
+# Para-Droid AI TrendPulse
 
-TrendPulse Dashboard is a customizable web application that empowers users to track evolving topics of interest. It functions like an AI-powered, personalized feed reader, where users create "Topic Streams" for any subject. TrendPulse then leverages Perplexity Sonar AI to deliver concise, AI-generated summaries with citations, allows interactive follow-up questions, and provides configurable real-time updates—all within a dynamic dashboard interface.
+Para-Droid AI TrendPulse (V2) is a customizable web application that empowers users to track evolving topics of interest. It functions like an AI-powered, personalized feed reader, where users create "Topic Streams" for any subject. TrendPulse then leverages decoupled models (local Ollama or OpenRouter) to deliver concise, AI-generated summaries with citations, allows interactive follow-up questions, and provides configurable real-time updates—all within a dynamic dashboard interface.
 
 ## Demo
 
