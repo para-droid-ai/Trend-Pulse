@@ -267,3 +267,6 @@ Current focus is on completing Priority 3 items and refining Newspaper View (Pri
 - ✅ Configure markdown formatting for API responses
   - ✅ Update system prompts to request markdown formatting
   - ✅ Implement markdown response parsing
+
+## Security & Auth Task
+- ✅ Fixed unauthenticated user creation vulnerability in POST /users/ endpoint.
