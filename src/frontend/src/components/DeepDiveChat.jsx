@@ -6,13 +6,9 @@ import MarkdownRenderer from './MarkdownRenderer';
 const formatR1Response = (text) => {
   if (!text) return '';
   
-  // Add proper line breaks for paragraphs
   let formatted = text
-    // Split on sentences to create more readable paragraphs
     .replace(/\. /g, '.\n\n')
-    // Fix any excessive line breaks
     .replace(/\n{3,}/g, '\n\n')
-    // Add markdown headers for better structure
     .replace(/([A-Z][A-Za-z\s]{10,}:)/g, '\n## $1');
   
   // Add a markdown header at the beginning if none exists

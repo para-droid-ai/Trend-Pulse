@@ -184,6 +184,7 @@
   - [ ] Implement category filtering
   - [ ] Add sorting options
 
+## Priority 4: Testing & Documentation
 - [ ] Testing
   - [ ] Write component tests
   - [ ] Test responsive behavior
@@ -191,7 +192,6 @@
   - [ ] Test state management
   - [ ] Validate accessibility
 
-## Priority 4: Testing & Documentation
 - [ ] Backend Testing
   - [ ] API endpoint tests
   - [ ] Database operation tests
