@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useContext } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useContext, useMemo } from 'react';
 import AuthContext from '../context/AuthContext';
 import { topicStreamAPI } from '../services/api';
 import TopicStreamForm from '../components/TopicStreamForm';
@@ -39,6 +39,15 @@ const Dashboard = () => {
   const [creationProgress, setCreationProgress] = useState(0);
   const [creationMessage, setCreationMessage] = useState('');
   const [isMacOs, setIsMacOs] = useState(false);
+
+  // Optimized lookup map for topic streams
+  const topicStreamsById = useMemo(() => {
+    return topicStreams.reduce((acc, stream) => {
+      acc[stream.id] = stream;
+      return acc;
+    }, {});
+  }, [topicStreams]);
+
   
   // Simplified drag state variables without DnD
   const [draggedStreamId, setDraggedStreamId] = useState(null);
@@ -528,7 +537,7 @@ const Dashboard = () => {
         setSummaries(prev => [
           {
             ...newSummary,
-            streamQuery: topicStreams.find(s => s.id === id)?.query || '', 
+            streamQuery: topicStreamsById[id]?.query || '',
             streamId: id,
           },
           ...prev
@@ -558,7 +567,7 @@ const Dashboard = () => {
       }
       throw err;
     }
-  }, [topicStreams]);
+  }, [topicStreamsById]);
 
   // Simplified drag-and-drop functions - still using HTML5 native drag and drop
   const handleDragStart = useCallback((e, streamId) => {
@@ -755,7 +764,7 @@ const Dashboard = () => {
             {/* Update button */}
             <button
               onClick={() => {
-                const stream = topicStreams.find(s => s.id === summary.streamId);
+                const stream = topicStreamsById[summary.streamId];
                 if (stream) handleUpdateNow(stream.id);
               }}
               className="px-2 py-1 text-xs rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
@@ -766,10 +775,10 @@ const Dashboard = () => {
             {/* View All button */}
             <button
               onClick={() => {
-                const streamIndex = topicStreams.findIndex(s => s.id === summary.streamId);
-                if (streamIndex >= 0) {
+                const stream = topicStreamsById[summary.streamId];
+                if (stream) {
                   changeViewMode('list');
-                  setSelectedStream(topicStreams[streamIndex]);
+                  setSelectedStream(stream);
                 }
               }}
               className="px-2 py-1 text-xs rounded-full bg-muted text-muted-foreground hover:bg-muted/80"
