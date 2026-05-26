@@ -4,6 +4,8 @@ import time
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from sqlalchemy.orm import Session
+from sqlalchemy import func
+
 from models import TopicStream, UpdateFrequency, Summary, DetailLevel, ModelType, ContextHistoryLevel
 from perplexity_api import PerplexityAPI, APIError, APIClientError, APIServerError, APINetworkError
 from database import SessionLocal
@@ -214,28 +216,31 @@ class TopicStreamScheduler:
         try:
             db = self.get_db()
             
-            # Get all topic streams
-            topic_streams = db.query(TopicStream).all()
+            # Find streams that exceed the limit
+            streams_to_cleanup = db.query(
+                Summary.topic_stream_id,
+                func.count(Summary.id)
+            ).group_by(
+                Summary.topic_stream_id
+            ).having(
+                func.count(Summary.id) > max_summaries_per_stream
+            ).all()
             
-            for stream in topic_streams:
-                # Count summaries for this stream
-                count = db.query(Summary).filter(Summary.topic_stream_id == stream.id).count()
+            for stream_id, count in streams_to_cleanup:
+                # Find IDs of summaries to keep (most recent ones)
+                keep_ids = db.query(Summary.id).filter(
+                    Summary.topic_stream_id == stream_id
+                ).order_by(Summary.created_at.desc()).limit(max_summaries_per_stream).all()
+                keep_ids = [id[0] for id in keep_ids]
                 
-                if count > max_summaries_per_stream:
-                    # Find IDs of summaries to keep (most recent ones)
-                    keep_ids = db.query(Summary.id).filter(
-                        Summary.topic_stream_id == stream.id
-                    ).order_by(Summary.created_at.desc()).limit(max_summaries_per_stream).all()
-                    keep_ids = [id[0] for id in keep_ids]
-                    
-                    # Delete older summaries
-                    db.query(Summary).filter(
-                        Summary.topic_stream_id == stream.id,
-                        ~Summary.id.in_(keep_ids)
-                    ).delete(synchronize_session=False)
-                    
-                    db.commit()
-                    logger.info(f"Cleaned up old summaries for topic stream {stream.id}")
+                # Delete older summaries
+                db.query(Summary).filter(
+                    Summary.topic_stream_id == stream_id,
+                    ~Summary.id.in_(keep_ids)
+                ).delete(synchronize_session=False)
+
+                db.commit()
+                logger.info(f"Cleaned up old summaries for topic stream {stream_id}")
             
         except Exception as e:
             logger.error(f"Error cleaning up old summaries: {str(e)}")
