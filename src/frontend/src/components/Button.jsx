@@ -1,16 +1,16 @@
-import React from 'react';
-import LoadingSpinner from './LoadingSpinner';
+import React from "react";
+import LoadingSpinner from "./LoadingSpinner";
 
-const Button = ({ 
-  children, 
-  variant = 'primary',
-  size = 'md',
+const Button = ({
+  children,
+  variant = "primary",
+  size = "md",
   loading = false,
   disabled = false,
   onClick,
-  className = '',
+  className = "",
   icon,
-  ...props 
+  ...props
 }) => {
   const baseClasses = `
     inline-flex items-center justify-center font-medium rounded-lg
@@ -45,15 +45,15 @@ const Button = ({
       bg-destructive text-destructive-foreground
       hover:bg-destructive/90 hover:shadow-md hover:-translate-y-0.5
       active:bg-destructive/95 active:shadow-sm active:translate-y-0
-    `
+    `,
   };
 
   const sizes = {
-    xs: 'px-2 py-1 text-xs h-6',
-    sm: 'px-3 py-1.5 text-sm h-8',
-    md: 'px-4 py-2 text-sm h-10',
-    lg: 'px-6 py-3 text-base h-12',
-    xl: 'px-8 py-4 text-lg h-14'
+    xs: "px-2 py-1 text-xs h-6",
+    sm: "px-3 py-1.5 text-sm h-8",
+    md: "px-4 py-2 text-sm h-10",
+    lg: "px-6 py-3 text-base h-12",
+    xl: "px-8 py-4 text-lg h-14",
   };
 
   const isDisabled = disabled || loading;
@@ -71,21 +71,17 @@ const Button = ({
       {...props}
     >
       {loading ? (
-        <LoadingSpinner 
-          size={size === 'xs' ? 'xs' : size === 'sm' ? 'sm' : 'sm'} 
+        <LoadingSpinner
+          size={size === "xs" ? "xs" : size === "sm" ? "sm" : "sm"}
           className="mr-2"
         />
       ) : icon ? (
-        <span className="mr-2 flex items-center">
-          {icon}
-        </span>
+        <span className="mr-2 flex items-center">{icon}</span>
       ) : null}
-      
-      <span className={loading ? 'opacity-70' : ''}>
-        {children}
-      </span>
+
+      <span className={loading ? "opacity-70" : ""}>{children}</span>
     </button>
   );
 };
 
-export default Button; 
+export default Button;

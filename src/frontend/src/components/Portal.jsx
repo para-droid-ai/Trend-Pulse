@@ -1,15 +1,15 @@
-import { useEffect, useState } from 'react';
-import ReactDOM from 'react-dom';
+import { useEffect, useState } from "react";
+import ReactDOM from "react-dom";
 
 const Portal = ({ children }) => {
   const [container, setContainer] = useState(null);
 
   useEffect(() => {
     // Create a dedicated div for the portal if it doesn't exist
-    let portalContainer = document.getElementById('portal-root');
+    let portalContainer = document.getElementById("portal-root");
     if (!portalContainer) {
-      portalContainer = document.createElement('div');
-      portalContainer.setAttribute('id', 'portal-root');
+      portalContainer = document.createElement("div");
+      portalContainer.setAttribute("id", "portal-root");
       document.body.appendChild(portalContainer);
     }
     setContainer(portalContainer);
@@ -32,4 +32,4 @@ const Portal = ({ children }) => {
   return ReactDOM.createPortal(children, container);
 };
 
-export default Portal; 
+export default Portal;

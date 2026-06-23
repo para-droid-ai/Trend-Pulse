@@ -1,6 +1,6 @@
-import React from 'react';
-import { DndProvider } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
+import React from "react";
+import { DndProvider } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
 
 /**
  * A wrapper component that provides DnD functionality
@@ -12,7 +12,7 @@ export default function DndWrapper({ children }) {
     return <DndProvider backend={HTML5Backend}>{children}</DndProvider>;
   } catch (error) {
     // Fallback to just rendering children without DnD functionality
-    console.error('Failed to initialize drag and drop:', error);
+
     return <>{children}</>;
   }
-} 
+}

@@ -1,11 +1,11 @@
-import axios from 'axios';
+import axios from "axios";
 
 // Create axios instance
 const api = axios.create({
-  baseURL: 'http://localhost:8000',
+  baseURL: "http://localhost:8000",
   withCredentials: true,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
   timeout: 2700000, // Increased to 45 minutes (2,700,000 ms)
 });
@@ -13,55 +13,37 @@ const api = axios.create({
 // Add request interceptor for adding auth token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('authToken');
-    console.log(`🔐 Request interceptor: Token present: ${!!token}`);
+    const token = localStorage.getItem("authToken");
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.log(`🔑 Request interceptor: Added auth header for ${config.method?.toUpperCase()} ${config.url}`);
-    } else {
-      console.warn(`⚠️ Request interceptor: No token found for ${config.method?.toUpperCase()} ${config.url}`);
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 // Add response interceptor for handling common errors
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error('API Error:', error);
-    
     // Handle session timeout/token expiration
     if (error.response && error.response.status === 401) {
-      console.log('Authentication error detected, logging out user');
-      
       // Clear auth tokens and redirect to login if unauthorized
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('user');
-      localStorage.removeItem('user_id');
-      
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("user");
+      localStorage.removeItem("user_id");
+
       // Only redirect if we're not already on the login page
-      if (!window.location.pathname.includes('/login')) {
-        console.log('Redirecting to login page');
-        window.location.href = '/login';
+      if (!window.location.pathname.includes("/login")) {
+        window.location.href = "/login";
       }
     }
-    
+
     // Add more logging for other error types
-    if (error.response) {
-      // The request was made and the server responded with a non-2xx status
-      console.error('Server responded with error:', error.response.status, error.response.data);
-    } else if (error.request) {
-      // The request was made but no response was received
-      console.error('No response received from server', error.request);
-    } else {
-      // Something else caused the error
-      console.error('Error setting up request:', error.message);
-    }
-    
+
     return Promise.reject(error);
-  }
+  },
 );
 
 // Retry logic for API calls
@@ -72,18 +54,22 @@ const retryRequest = async (apiCall, maxRetries = 3) => {
       return await apiCall();
     } catch (error) {
       // Only retry on network errors or 5xx server errors
-      if (error.response && error.response.status < 500 && error.code !== 'ECONNABORTED') {
+      if (
+        error.response &&
+        error.response.status < 500 &&
+        error.code !== "ECONNABORTED"
+      ) {
         throw error; // Don't retry client errors (4xx)
       }
-      
+
       retries++;
       if (retries >= maxRetries) {
         throw error; // Max retries reached
       }
-      
+
       // Exponential backoff
       const delay = Math.pow(2, retries) * 300;
-      await new Promise(resolve => setTimeout(resolve, delay));
+      await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
 };
@@ -92,31 +78,29 @@ const retryRequest = async (apiCall, maxRetries = 3) => {
 export const authAPI = {
   login: async (email, password) => {
     const formData = new FormData();
-    formData.append('username', email);
-    formData.append('password', password);
-    
+    formData.append("username", email);
+    formData.append("password", password);
+
     try {
       // Send request with FormData. Axios should set Content-Type automatically.
       // We pass specific config to override the default 'application/json' for this call.
-      const response = await api.post('/token', formData, {
+      const response = await api.post("/token", formData, {
         headers: {
           // Let Axios handle the Content-Type for FormData
-          'Content-Type': undefined 
-        }
+          "Content-Type": undefined,
+        },
       });
       return response.data;
     } catch (error) {
-      console.error('Login error:', error);
       throw error;
     }
   },
-  
+
   register: async (email, password) => {
     try {
-      const response = await api.post('/users/', { email, password });
+      const response = await api.post("/users/", { email, password });
       return response.data;
     } catch (error) {
-      console.error('Registration error:', error);
       throw error;
     }
   },
@@ -126,166 +110,148 @@ export const authAPI = {
 export const topicStreamAPI = {
   getAll: async () => {
     return retryRequest(async () => {
-      const response = await api.get('/topic-streams/');
+      const response = await api.get("/topic-streams/");
       return response.data;
     });
   },
-  
+
   create: async (topicStream) => {
     try {
-      const response = await api.post('/topic-streams/', topicStream);
+      const response = await api.post("/topic-streams/", topicStream);
       return response.data;
     } catch (error) {
-      console.error('Create stream error:', error);
       throw error;
     }
   },
-  
+
   update: async (id, topicStream) => {
     try {
       const response = await api.put(`/topic-streams/${id}`, topicStream);
       return response.data;
     } catch (error) {
-      const errorMessage = error.response?.data?.detail || error.message || 'Failed to update topic stream';
-      console.error('Update stream error:', error, { id, topicStream });
+      const errorMessage =
+        error.response?.data?.detail ||
+        error.message ||
+        "Failed to update topic stream";
+
       throw new Error(errorMessage);
     }
   },
-  
+
   delete: async (id) => {
     try {
-      console.log(`🚀 API: Starting delete request for stream ID: ${id}`);
       const response = await api.delete(`/topic-streams/${id}`);
-      console.log(`✅ API: Delete successful for ID ${id}`, response);
+
       return response.data;
     } catch (error) {
-      console.error(`❌ API: Delete stream error for ID ${id}:`, error);
-      if (error.response) {
-        console.error('📋 API: Server response:', error.response.data);
-        console.error('📊 API: Status code:', error.response.status);
-      }
       throw error;
     }
   },
-  
+
   getById: async (id) => {
     return retryRequest(async () => {
       const response = await api.get(`/topic-streams/${id}`);
       return response.data;
     });
   },
-  
+
   getSummaries: async (id) => {
     return retryRequest(async () => {
       const response = await api.get(`/topic-streams/${id}/summaries/`);
       return response.data;
     });
   },
-  
-  updateNow: async (id, options = { ignore_all_previous_summaries_override: false }) => {
+
+  updateNow: async (
+    id,
+    options = { ignore_all_previous_summaries_override: false },
+  ) => {
     try {
-      console.log(`Calling update-now API for stream ${id} with options:`, options);
       // Ensure 'options' is sent as the request body for the POST request
-      const response = await api.post(`/topic-streams/${id}/update-now`, options); 
-      console.log(`Update-now API successful for stream ${id}`);
+      const response = await api.post(
+        `/topic-streams/${id}/update-now`,
+        options,
+      );
+
       return response.data;
     } catch (error) {
-      console.error(`Update now error for ID ${id}:`, error);
-      if (error.response) {
-        console.error(`Server error response:`, error.response.data);
-        console.error(`Status code: ${error.response.status}`);
-      } else if (error.request) {
-        console.error(`No response received:`, error.request);
-      }
       throw error;
     }
   },
-  
+
   appendSummary: async (id, content) => {
     try {
-      const response = await api.post(`/topic-streams/${id}/summaries/`, { content });
+      const response = await api.post(`/topic-streams/${id}/summaries/`, {
+        content,
+      });
       return response.data;
     } catch (error) {
-      console.error(`Append summary error for stream ${id}:`, error);
       throw error;
     }
   },
-  
+
   deleteSummary: async (streamId, summaryId) => {
     try {
-      console.log(`Deleting summary ${summaryId} from stream ${streamId} - About to make API call`);
       // Use explicit URL construction to ensure correct format
       const url = `/topic-streams/${streamId}/summaries/${summaryId}`;
-      console.log(`DELETE request URL: ${url}`);
-      
+
       const response = await api.delete(url);
-      console.log(`Delete summary response:`, response);
-      console.log(`Delete summary successful for ${summaryId}`);
+
       return response.data;
     } catch (error) {
-      console.error(`Delete summary error for stream ${streamId}, summary ${summaryId}:`, error);
-      if (error.response) {
-        console.error(`Server error response code:`, error.response.status);
-        console.error(`Server error response data:`, error.response.data);
-        console.error(`Server error response headers:`, error.response.headers);
-      } else if (error.request) {
-        console.error(`No response received:`, error.request);
-      } else {
-        console.error(`Error setting up request:`, error.message);
-      }
       throw error;
     }
-  }
+  },
 };
 
 // Deep Dive API calls
 export const deepDiveAPI = {
   askQuestion: async (topicStreamId, summaryId, question, model) => {
     try {
-      console.log(`Sending deep dive question for topic ${topicStreamId}, summary ${summaryId}: "${question}", Model: ${model}`);
-      const response = await api.post('/deep-dive/', {
+      const response = await api.post("/deep-dive/", {
         topic_stream_id: topicStreamId,
         summary_id: summaryId,
         question: question,
-        model: model
+        model: model,
       });
-      console.log('Deep dive response received');
+
       return {
         answer: response.data.answer,
         sources: response.data.sources,
-        model: response.data.model // Return the model information
+        model: response.data.model, // Return the model information
       };
     } catch (error) {
-      console.error('Deep dive API error:', error);
-      
       // Get a more detailed error message if available
-      const errorMessage = error.response?.data?.detail || error.message || 'An error occurred while processing your question';
+      const errorMessage =
+        error.response?.data?.detail ||
+        error.message ||
+        "An error occurred while processing your question";
       throw new Error(`Deep dive failed: ${errorMessage}`);
     }
-  }
+  },
 };
 
 // Optimize Prompt API calls
 export const optimizePromptAPI = {
   optimize: async (topicQuery) => {
     try {
-      console.log(`Optimizing prompt: "${topicQuery}"`);
-      const response = await api.post('/optimize-prompt/', {
-        topic_query: topicQuery
+      const response = await api.post("/optimize-prompt/", {
+        topic_query: topicQuery,
       });
-      console.log('Prompt optimization response received');
+
       return {
         optimized_query: response.data.optimized_query,
-        model: response.data.model
+        model: response.data.model,
       };
     } catch (error) {
-      console.error('Optimize prompt API error:', error);
-      
       // Get a more detailed error message if available
-      const errorMessage = error.response?.data?.detail || error.message || 'An error occurred while optimizing the prompt';
+      const errorMessage =
+        error.response?.data?.detail ||
+        error.message ||
+        "An error occurred while optimizing the prompt";
       throw new Error(`Prompt optimization failed: ${errorMessage}`);
     }
-  }
+  },
 };
 
-export default api; 
+export default api;
