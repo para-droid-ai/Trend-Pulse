@@ -6,6 +6,7 @@ import aiohttp
 from typing import Dict, List, Optional, Any
 from datetime import datetime, timezone, timedelta
 import time
+import asyncio
 import json
 import ssl
 import certifi
@@ -51,7 +52,7 @@ class PerplexityAPI:
         self.requests_per_minute = 60
         self.request_timestamps = []
         
-    def _check_rate_limit(self):
+    async def _check_rate_limit(self):
         """Implement basic rate limiting"""
         current_time = time.time()
         # Remove timestamps older than 1 minute
@@ -61,7 +62,7 @@ class PerplexityAPI:
         if len(self.request_timestamps) >= self.requests_per_minute:
             sleep_time = 60 - (current_time - self.request_timestamps[0])
             if sleep_time > 0:
-                time.sleep(sleep_time)
+                await asyncio.sleep(sleep_time)
         
         self.request_timestamps.append(current_time)
 
@@ -201,7 +202,7 @@ class PerplexityAPI:
             PerplexityAPIError: If the API call fails
         """
         try:
-            self._check_rate_limit()
+            await self._check_rate_limit()
             
             logger.info(f"Searching for: {query} using model: {model}")
             
@@ -353,7 +354,7 @@ class PerplexityAPI:
         logger.debug(f"Payload for search_perplexity: {json.dumps(payload, indent=2)}")
 
         try:
-            self._check_rate_limit() # Check rate limit before making the call
+            await self._check_rate_limit() # Check rate limit before making the call
             # raw_api_result is the full JSON response from Perplexity
             raw_api_result = await self._make_request("chat/completions", payload, timeout_seconds=current_timeout_seconds)
             logger.debug(f"Received API response (first 200 chars): {json.dumps(raw_api_result)[:200]}...") # Log a snippet
@@ -497,7 +498,7 @@ class PerplexityAPI:
             PerplexityAPIError: If the API call fails
         """
         try:
-            self._check_rate_limit()
+            await self._check_rate_limit()
             
             logger.info(f"Asking follow-up: {query} with model: {model}, max_tokens: {max_tokens}")
             
